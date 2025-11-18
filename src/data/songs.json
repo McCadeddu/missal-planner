@@ -1,0 +1,6 @@
+﻿{
+  "Entrada": [ "Canto de Entrada 1", "Canto de Entrada 2", "Canto de Entrada 3" ],
+  "Ofertório": [ "Canto do Ofertório 1", "Canto do Ofertório 2" ],
+  "Comunhão": [ "Canto da Comunhão 1", "Canto da Comunhão 2", "Canto da Comunhão 3" ],
+  "Saída": [ "Canto de Saída 1", "Canto de Saída 2" ]
+}

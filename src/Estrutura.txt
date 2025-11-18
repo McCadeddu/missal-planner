@@ -1,0 +1,9 @@
+src/
+├─ components/
+│  ├─ SongSelector.jsx
+│  └─ SongList.jsx
+├─ data/
+│  └─ songs.json
+├─ index.css
+├─ main.jsx
+└─ App.jsx

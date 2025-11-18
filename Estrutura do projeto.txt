@@ -1,0 +1,16 @@
+missal-planner/
+├─ node_modules/
+├─ public/
+│  └─ index.html
+├─ src/
+│  ├─ components/
+│  │  ├─ SongSelector.jsx
+│  │  └─ SongList.jsx
+│  ├─ data/
+│  │  └─ songs.json
+│  ├─ App.jsx
+│  ├─ main.jsx
+│  └─ index.css
+├─ package.json
+├─ tailwind.config.cjs
+└─ postcss.config.cjs
