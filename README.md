@@ -1,16 +1,107 @@
-# React + Vite
+# Missal Planner
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 🌐 Línguas / Languages / Lingue
+[🇧🇷 Versão em Português](README.md)
+[🇬🇧 English Version](README.en.md)
+[🇮🇹 Versione in Italiano](README.it.md)
 
-Currently, two official plugins are available:
+Aplicativo minimalista para selecionar, organizar e compartilhar cantos litúrgicos para Missa e Adoração.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 📘 Visão Geral
+O **Missal Planner** é uma ferramenta simples, leve e prática destinada a equipes de liturgia, ministros de música e missionários que precisam preparar celebrações com rapidez e clareza.
 
-## React Compiler
+Ele permite:
+- Criar listas de cantos
+- Editar e reorganizar músicas
+- Salvar e reabrir planejamentos
+- Exportar versões em **PDF**
+- Compartilhar por link
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Tudo com uma interface limpa, objetiva e fácil de usar.
 
-## Expanding the ESLint configuration
+## 📂 Estrutura do Projeto
+```
+missal-planner/
+├─ public/
+├─ src/
+│  ├─ components/
+│  ├─ data/
+│  ├─ App.jsx
+│  └─ ...
+├─ package.json
+└─ ...
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## ▶️ Como Rodar
+Requisitos:
+- **Node.js 18+**
+
+Instale as dependências:
+```
+npm install
+```
+Execute o servidor de desenvolvimento:
+```
+npm run dev
+```
+Acesse no navegador:
+```
+http://localhost:5173
+```
+
+## 🚀 Roadmap
+Funcionalidades previstas na próxima fase de desenvolvimento:
+- Importação de arquivos JSON
+- Exportação em PDF com layout limpo
+- Compartilhamento por link
+- Busca interna
+- Filtro por número e nome
+- Ordenação de cantos
+- Modo "Adoração"
+- Editor de cantos cadastrados
+- Interface mais moderna com Tailwind
+
+## 🤝 Como Contribuir
+Contribuições são bem-vindas!
+- Para novas funcionalidades, abra uma *issue*
+- Para melhorias diretas, envie um *pull request*
+
+## 🛠 Tecnologias Utilizadas
+- React + Vite
+- Tailwind CSS
+- html2pdf.js
+- Node.js 18+
+
+## 🖼 Capturas de Tela
+> (*Adicione imagens aqui quando disponíveis*)
+- Tela inicial
+- Seleção de cantos
+- Lista da Missa
+- Exportação em PDF
+
+### Missal Planner – Overview
+A minimal and practical tool to organize liturgical songs for Mass and Eucharistic Adoration.
+
+Features:
+- Create song lists
+- Edit and reorder songs
+- Save and reopen plans
+- Export as **PDF**
+- Share via link
+
+### Run the project
+```
+npm install
+npm run dev
+```
+Visit:
+```
+http://localhost:5173
+```
+
+## 👤 Créditos
+Projeto desenvolvido por **Marco Cadeddu**.
+Apoio técnico pela comunidade open source.
+
+##
+
