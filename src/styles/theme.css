@@ -1,0 +1,115 @@
+/* ================================================================
+   CMV Theme — Estética litúrgica
+   ================================================================ */
+
+:root {
+    --cmv-primary: #4bbbc8;
+    --cmv-accent: #ff6136;
+    --cmv-bg: #f1e5ae;
+    --cmv-text: #5c2e09;
+    --cmv-muted: #876348;
+    --cmv-border: #c77e4a;
+    --font-heading: 'Villaregia', serif;
+    --font-sans: 'VillaregiaSans', sans-serif;
+    --card-radius: 16px;
+    --card-shadow: 0 10px 26px rgba(92,46,9,0.05);
+}
+
+/* Window / Card */
+.cmv-window,
+.cmv-card {
+    background: white;
+    padding: 1.25rem !important;
+    border-radius: var(--card-radius) !important;
+    border: 1px solid rgba(92,46,9,0.10);
+    box-shadow: var(--card-shadow);
+}
+
+/* Bordas */
+.cmv-border {
+    border: 2px solid var(--cmv-border) !important;
+    border-radius: var(--card-radius) !important;
+}
+
+.h-liturgico {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    color: var(--cmv-text);
+}
+
+/* Header */
+.header-cmv {
+    background: linear-gradient(180deg, rgba(250,245,225,0.88), rgba(250,245,225,0.65));
+    border-radius: 18px !important;
+    padding: 2.2rem 2rem 2.6rem 2rem;
+    box-shadow: 0 10px 30px rgba(92,46,9,0.10);
+    text-align: center;
+}
+
+    .header-cmv img.logo {
+        height: 52px;
+    }
+
+/* Botões */
+.btn-cmv {
+    padding: 0.7rem 1.1rem;
+    border-radius: 12px;
+    border: 2px solid var(--cmv-border);
+    background: white;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: transform .12s ease, box-shadow .14s ease;
+}
+
+    .btn-cmv:hover {
+        background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(241,229,174,0.18));
+        box-shadow: 0 10px 22px rgba(75,187,200,0.10);
+    }
+
+.btn-cmv-outline {
+    display: inline-block;     /* ← ESSENCIAL! */
+    background: #ffffff;
+    color: var(--cmv-text);
+    border: 2px solid var(--cmv-border);
+    border-radius: 12px;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+}
+
+/* Inputs */
+.cmv-input {
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    border: 1px solid rgba(92,46,9,0.16);
+    background: white;
+}
+
+/* Tooltip — Azul, menor, CMV */
+.tooltip-cmv {
+    background: var(--cmv-bg);
+    color: var(--cmv-text);
+    padding: 2px 6px;
+    font-size: 0.70rem;
+    border: 1px solid var(--cmv-muted);
+    border-radius: 4px;
+    white-space: nowrap;
+    display: inline-block;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+/* Animação */
+@keyframes fade {
+    from {
+        opacity: 0;
+        transform: scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-fade {
+    animation: fade 0.25s ease-out;
+}

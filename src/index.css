@@ -1,3 +1,85 @@
+/* ==========================================
+   Tailwind base
+   ========================================== */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+/* ==========================================
+   Tema CMV — Comunidade Missionária de Villaregia
+   ========================================== */
+:root {
+    --cmv-primary: #4bbbc8;
+    --cmv-accent: #ff6136;
+    --cmv-bg: #f1e5ae;
+    --cmv-text: #5c2e09;
+    --cmv-muted: #876348;
+    --font-heading: 'Villaregia', serif;
+    --font-sans: 'VillaregiaSans', sans-serif;
+}
+
+
+/* ==========================================
+   Bordas CMV (versão forte, não sobrescreve)
+   ========================================== */
+.cmv-border {
+    border-width: 2px !important;
+    border-style: solid !important;
+    border-color: #c77e4a !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
+}
+
+
+/* ==========================================
+   Botões CMV Outline
+   ========================================== */
+.btn-cmv-outline {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 2px solid #c77e4a !important;
+    border-radius: 10px !important;
+    padding: 0.35rem 1rem !important;
+    font-weight: 600 !important;
+    transition: 0.2s ease-in-out !important;
+}
+
+    .btn-cmv-outline:hover {
+        background: #fdf6ed !important;
+    }
+
+
+/* ==========================================
+   Header (logo)
+   ========================================== */
+.header-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+    .header-logo img {
+        height: 48px;
+        width: auto;
+    }
+
+
+/* ==========================================
+   Animações
+   ========================================== */
+@keyframes fade {
+    from {
+        opacity: 0;
+        transform: scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-fade {
+    animation: fade 0.25s ease-out;
+}

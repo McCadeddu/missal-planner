@@ -1,0 +1,7 @@
+Set oShell = CreateObject("WScript.Shell")
+iconPath = "C:\projetos\missal-planner\assets\missal.ico"
+
+If CreateObject("Scripting.FileSystemObject").FileExists(iconPath) Then
+    oShell.Run "cmd /c assoc .missal=missalfile", 0, True
+    oShell.Run "cmd /c ftype missalfile=Start-MissalPlanner.bat %1", 0, True
+End If
