@@ -1,5 +1,4 @@
 import React from "react";
-import Tooltip from "../Tooltip";
 
 /**
  * Filters - inputs de busca e filtros litúrgicos CMV
@@ -14,7 +13,6 @@ export default function Filters({
     return (
         <div className="mt-4 flex flex-wrap gap-2 items-center">
 
-            <Tooltip text="Pesquisar na biblioteca de cantos">
                 <input
                     placeholder="Pesquisar..."
                     value={globalSearch}
@@ -26,9 +24,7 @@ export default function Filters({
                         color: "var(--cmv-text)"
                     }}
                 />
-            </Tooltip>
 
-            <Tooltip text="Filtrar por categoria">
                 <select
                     value={filterCategory}
                     onChange={(e) => setFilterCategory(e.target.value)}
@@ -44,9 +40,7 @@ export default function Filters({
                         <option key={c}>{c}</option>
                     ))}
                 </select>
-            </Tooltip>
 
-            <Tooltip text="Filtrar por compositor">
                 <input
                     placeholder="Compositor"
                     value={filterComposer}
@@ -58,9 +52,7 @@ export default function Filters({
                         color: "var(--cmv-text)"
                     }}
                 />
-            </Tooltip>
 
-            <Tooltip text="Ordenar biblioteca">
                 <select
                     value={sortMode}
                     onChange={(e) => setSortMode(e.target.value)}
@@ -75,7 +67,6 @@ export default function Filters({
                     <option value="nome">Nome</option>
                     <option value="numero">Número</option>
                 </select>
-            </Tooltip>
 
         </div>
     );

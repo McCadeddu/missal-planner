@@ -3,7 +3,13 @@ import Papa from "papaparse";
 import { jsPDF } from "jspdf";
 
 import Header from "./components/Header";
-import Tooltip from "./components/Tooltip";
+
+// --- AUTOSAVE KEYS ---
+const AUTOSAVE_LIBRARY = "mp_library_v1";
+const AUTOSAVE_SELECTED = "mp_selected_v1";
+const AUTOSAVE_MASSNAME = "mp_massname_v1";
+const AUTOSAVE_MASSDATE = "mp_massdate_v1";
+const AUTOSAVE_MODE = "mp_mode_v1";
 
 import LibraryPanel from "./components/library/LibraryPanel";
 import Filters from "./components/library/Filters";
@@ -16,13 +22,15 @@ import cantosCSV from "./data/cantos.csv?raw";
 
 /* modos e seções (mantidos) */
 const missaSections = [
-    "Canto de Entrada / Hino das Horas",
+    "Cantos para ensaiar",
+    "Canto de Entrada / Hino L. das Horas",
     "Canto de Pedido de Perdão",
     "Canto do Glória",
     "Refrão de Introdução à Palavra de Deus",
     "Salmo cantado (refrão)",
     "Hino litúrgico cantado",
     "Aclamação ao Evangelho",
+    "Refrão para retomar a Palavra de Deus",
     "Canto do Ofertório",
     "Santo cantado",
     "Pai nosso cantado",
@@ -81,7 +89,6 @@ function flattenSelected(selectedSongs, sectionsOrder = []) {
 }
 
 export default function App() {
-    const [tooltip, setTooltip] = useState(null);
 
     const [songsData, setSongsData] = useState([]);
     const [mode, setMode] = useState("missa");
@@ -102,34 +109,174 @@ export default function App() {
     const [newSongDraft, setNewSongDraft] = useState({ nome: "", numero: "", composer: "", category: "Geral" });
 
     const [showSectionModal, setShowSectionModal] = useState(false);
+
+    // Modal: Eliminar canto da Biblioteca
+    const [showDeleteLibraryModal, setShowDeleteLibraryModal] = useState(false);
+    const [songToDelete, setSongToDelete] = useState(null);
+
     const [pendingSong, setPendingSong] = useState(null);
     const [pendingSelections, setPendingSelections] = useState({});
+
+    // Modal: Informações do app / ajuda
+    const [showHelp, setShowHelp] = useState(false);
 
     // settings modal
     const [showSettings, setShowSettings] = useState(false);
 
     const fileInputLibraryRef = useRef();
-    const fileInputSelectedRef = useRef();
+    const fileHandleRef = useRef(null);
 
+    // --- LOAD CSV APENAS SE NUNCA HOUVE AUTOSAVE ---
     useEffect(() => {
         if (!cantosCSV) return;
+
         try {
             const parsed = Papa.parse(cantosCSV, { header: true, skipEmptyLines: true });
             const arr = parsed.data
                 .map((r, idx) => {
-                    const nome = (r["NOME DO CANTO"] ?? r["NOME"] ?? r["Nome do Canto"] ?? r["nome"] ?? r["NOME_DO_CANTO"] ?? "").toString().trim();
-                    const numero = (r["NÚMERO"] ?? r["NUMERO"] ?? r["Número"] ?? r["numero"] ?? "").toString().trim();
-                    const category = (r["CATEGORIA"] ?? r["categoria"] ?? "Geral").toString().trim() || "Geral";
-                    const composer = (r["COMPOSER"] ?? r["COMPOSITOR"] ?? r["composer"] ?? "").toString().trim();
+                    const nome = (r["NOME DO CANTO"] ?? r["NOME"] ?? "").toString().trim();
+                    const numero = (r["NÚMERO"] ?? r["NUMERO"] ?? "").toString().trim();
+                    const category = (r["CATEGORIA"] ?? "Geral").toString().trim();
+                    const composer = (r["COMPOSER"] ?? "").toString().trim();
                     return { id: idx + 1, numero, nome, composer, category };
                 })
                 .filter((s) => s.nome);
-            setSongsData(arr);
+
+            // Só usar CSV se não houver biblioteca personalizada salva
+            const savedLibraryRaw = localStorage.getItem(AUTOSAVE_LIBRARY);
+
+            if (!savedLibraryRaw) {
+                setSongsData(arr);
+                console.log("Biblioteca inicial carregada do CSV");
+            } else {
+                console.log("CSV ignorado — biblioteca personalizada carregada do autosave");
+            }
+
         } catch (e) {
             console.error(e);
         }
     }, []);
 
+    // --- LOAD AUTOSAVE ON START (JSON always preferred) ---
+    useEffect(() => {
+        try {
+            // 1️⃣ Tenta carregar biblioteca salva (JSON)
+            const savedLibraryRaw = localStorage.getItem(AUTOSAVE_LIBRARY);
+            let savedLibrary = null;
+
+            if (savedLibraryRaw) {
+                try {
+                    savedLibrary = JSON.parse(savedLibraryRaw);
+                } catch (e) {
+                    console.warn("Erro ao ler autosave JSON da biblioteca:", e);
+                }
+            }
+
+            // 2️⃣ Se existe biblioteca salva → usar SEMPRE
+            if (savedLibrary && Array.isArray(savedLibrary) && savedLibrary.length > 0) {
+                setSongsData(savedLibrary);
+            }
+
+            // 3️⃣ Caso contrário → usa CSV embutido (primeiro uso)
+            else {
+                console.log("Usando biblioteca padrão do CSV (primeira inicialização).");
+                // Nada a fazer: o CSV será carregado pelo outro useEffect automaticamente
+            }
+
+            // --- Outros autosaves (iguais ao seu código atual) ---
+            const savedSelected = localStorage.getItem(AUTOSAVE_SELECTED);
+            if (savedSelected) setSelectedSongs(JSON.parse(savedSelected));
+
+            const savedMassName = localStorage.getItem(AUTOSAVE_MASSNAME);
+            if (savedMassName) setMassName(savedMassName);
+
+            const savedMassDate = localStorage.getItem(AUTOSAVE_MASSDATE);
+            if (savedMassDate) setMassDate(savedMassDate);
+
+            const savedMode = localStorage.getItem(AUTOSAVE_MODE);
+            if (savedMode && modes[savedMode]) {
+                setMode(savedMode);
+                setSections(modes[savedMode].sections);
+            }
+
+        } catch (e) {
+            console.warn("Erro ao carregar autosave:", e);
+        }
+    }, []);
+
+    // --- AUTOSAVE LIBRARY (salva JSON automaticamente quando modificada) ---
+    useEffect(() => {
+        try {
+            localStorage.setItem(AUTOSAVE_LIBRARY, JSON.stringify(songsData));
+        } catch (e) {
+            console.warn("Erro ao salvar biblioteca:", e);
+        }
+    }, [songsData]);
+
+    // --- GARANTIR QUE TODO CANTO NA LISTA EXISTE NA BIBLIOTECA ---
+    useEffect(() => {
+        const flatSelected = flattenSelected(selectedSongs, sections);
+
+        setSongsData(prev => {
+            const existingIds = new Set(prev.map(s => s.id));
+            const newOnes = [];
+
+            for (const item of flatSelected) {
+                if (!existingIds.has(item.id)) {
+                    newOnes.push({
+                        id: item.id,
+                        numero: item.numero || "",
+                        nome: item.nome || "",
+                        composer: item.composer || "",
+                        category: item.category || "Geral",
+                    });
+                }
+            }
+
+            if (newOnes.length > 0) {
+                return [...prev, ...newOnes];
+            }
+
+            return prev;
+        });
+    }, [selectedSongs]);
+
+    // --- AUTOSAVE SELECTED SONGS ---
+    useEffect(() => {
+        try {
+            localStorage.setItem(AUTOSAVE_SELECTED, JSON.stringify(selectedSongs));
+        } catch (e) { }
+    }, [selectedSongs]);
+
+    // --- AUTOSAVE MASS NAME ---
+    useEffect(() => {
+        try {
+            localStorage.setItem(AUTOSAVE_MASSNAME, massName);
+        } catch (e) { }
+    }, [massName]);
+
+    // --- AUTOSAVE MASS DATE ---
+    useEffect(() => {
+        try {
+            localStorage.setItem(AUTOSAVE_MASSDATE, massDate);
+        } catch (e) { }
+    }, [massDate]);
+
+    // --- AUTOSAVE MODE ---
+    useEffect(() => {
+        try {
+            localStorage.setItem(AUTOSAVE_MODE, mode);
+        } catch (e) { }
+    }, [mode]);
+
+    // --- AUTOSAVE LIBRARY ---
+    useEffect(() => {
+        try {
+            localStorage.setItem(AUTOSAVE_LIBRARY, JSON.stringify(songsData));
+        } catch (e) { }
+    }, [songsData]);
+
+    // --- UPDATE SECTIONS ON MODE CHANGE ---
     useEffect(() => {
         setSections(modes[mode].sections);
         setSelectedSongs((prev) => {
@@ -215,6 +362,10 @@ export default function App() {
         alert("Editar: " + (item.nome || ""));
     };
 
+    const openDeleteLibraryModal = () => {
+        setShowDeleteLibraryModal(true);
+    };
+
     const saveNewSong = () => {
         if (!newSongDraft.nome || newSongDraft.nome.trim().length === 0) {
             alert("Nome vazio");
@@ -234,75 +385,116 @@ export default function App() {
         setShowAddModal(true);
     };
 
+    // --- DELETE SONG FROM LIBRARY (CORRIGIDO) ---
+    const deleteSongFromLibrary = (id) => {
+        // Remove da biblioteca
+        setSongsData(prev => prev.filter(song => song.id !== id));
+
+        // Remove de qualquer seção selecionada
+        setSelectedSongs(prev => {
+            const out = {};
+            for (const key in prev) {
+                const arr = prev[key].filter(song => song.id !== id);
+                if (arr.length > 0) out[key] = arr;
+            }
+            return out;
+        });
+    };
+
     /* ------------------ CSV: export/import biblioteca ------------------ */
 
-    // Exportar biblioteca como CSV (NOME, NÚMERO, CATEGORIA, COMPOSER)
+    // Exportar biblioteca como CSV (compositor + categoria + nomenclatura padronizada)
     const exportLibraryAsCSV = () => {
-        const rows = songsData.map((s) => ({ numero: s.numero || "", nome: s.nome || "", category: s.category || "", composer: s.composer || "" }));
+        const rows = songsData.map((s) => ({
+            "NÚMERO": s.numero || "",
+            "NOME DO CANTO": s.nome || "",
+            "COMPOSITOR": s.composer || "",
+            "CATEGORIA": s.category || "Geral",
+        }));
+
         const csv = Papa.unparse(rows, { header: true });
+
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-        downloadBlob(blob, `biblioteca_cantos_${new Date().toISOString().slice(0, 10)}.csv`);
+        downloadBlob(blob, `biblioteca_atualizada_${new Date().toISOString().slice(0, 10)}.csv`);
     };
 
     // Importar CSV para biblioteca (apenas colunas: numero, nome, category, composer são lidas)
     const importLibraryCSV = (file) => {
         if (!file) return;
+
         Papa.parse(file, {
             header: true,
             skipEmptyLines: true,
-            complete: function (results) {
-                const arr = results.data.map((r, idx) => {
-                    return {
-                        id: songsData.length + idx + 1,
-                        numero: (r.numero ?? r.NUMERO ?? r["NÚMERO"] ?? "").toString().trim(),
-                        nome: (r.nome ?? r.NOME ?? r["NOME DO CANTO"] ?? "").toString().trim(),
-                        category: (r.category ?? r.CATEGORIA ?? "Geral").toString().trim() || "Geral",
-                        composer: (r.composer ?? r.COMPOSER ?? "").toString().trim(),
-                    };
-                }).filter(s => s.nome);
-                if (arr.length > 0) setSongsData(prev => [...prev, ...arr]);
+            complete: (results) => {
+                const arr = results.data
+                    .map((r, idx) => {
+                        const nome = (r["NOME DO CANTO"] ?? r["NOME"] ?? "").toString().trim();
+                        if (!nome) return null;
+
+                        return {
+                            id: Date.now() + idx, // sempre id único
+                            numero: (r["NÚMERO"] ?? r["NUMERO"] ?? "").toString().trim(),
+                            nome,
+                            composer: (r["COMPOSITOR"] ?? "").toString().trim(),
+                            category: (r["CATEGORIA"] ?? "Geral").toString().trim(),
+                        };
+                    })
+                    .filter(Boolean);
+
+                if (arr.length > 0) {
+                    setSongsData((prev) => [...prev, ...arr]);
+                }
+
                 alert(`Importados ${arr.length} cantos para a biblioteca.`);
             },
-            error: function (e) { alert("Erro ao importar CSV: " + e.message); }
+            error: (e) => alert("Erro ao importar CSV: " + e.message),
         });
     };
+    // Exportar biblioteca completa em JSON
+    const exportLibraryJSON = () => {
+        const blob = new Blob([JSON.stringify(songsData, null, 2)], {
+            type: "application/json",
+        });
 
-    /* ------------------ CSV: export/import lista selecionada ------------------ */
-
-    // Exportar lista selecionada (nome + numero)
-    const exportSelectedAsCSV = () => {
-        const flat = flattenSelected(selectedSongs, sections);
-        const rows = flat.map((it) => ({ section: it.section, numero: it.numero || "", nome: it.nome || "" }));
-        const csv = Papa.unparse(rows, { header: true });
-        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-        downloadBlob(blob, `lista_cantos_${(massName || 'missal').replace(/\s+/g, '_')}_${massDate}.csv`);
+        downloadBlob(
+            blob,
+            `biblioteca_cantos_${new Date().toISOString().slice(0, 10)}.json`
+        );
     };
 
-    // Importar CSV para lista selecionada (assume colunas numero,nome[,section])
-    const importSelectedCSV = (file) => {
+    // Importar biblioteca completa em JSON
+    const importLibraryJSON = (file) => {
         if (!file) return;
-        Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            complete(results) {
-                const rows = results.data;
-                if (!rows || rows.length === 0) { alert("CSV vazio"); return; }
-                const newSelected = { ...selectedSongs };
-                for (const r of rows) {
-                    const nome = (r.nome ?? r.NOME ?? "").toString().trim();
-                    const numero = (r.numero ?? r.NUMERO ?? "").toString().trim();
-                    const section = (r.section ?? r.SECTION ?? sections[0]) || sections[0];
-                    if (!nome) continue;
-                    const found = songsData.find(s => (s.numero && s.numero.toString() === numero) || (s.nome && s.nome.toLowerCase() === nome.toLowerCase()));
-                    const songObj = found ? { ...found } : { id: Date.now(), numero, nome, composer: "", category: "Geral" };
-                    if (SINGLE_ONLY.has(section)) newSelected[section] = [songObj];
-                    else newSelected[section] = Array.isArray(newSelected[section]) ? [...newSelected[section], songObj] : [songObj];
+
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            try {
+                const imported = JSON.parse(e.target.result);
+
+                if (!Array.isArray(imported)) {
+                    alert("O arquivo JSON não contém uma lista válida de cantos.");
+                    return;
                 }
-                setSelectedSongs(newSelected);
-                alert(`Importados ${rows.length} linhas para a seleção.`);
-            },
-            error(e) { alert("Erro ao importar CSV: " + e.message); }
-        });
+
+                // Normalizar e gerar IDs novos
+                const normalized = imported.map((item, idx) => ({
+                    id: Date.now() + idx,
+                    numero: item.numero || "",
+                    nome: item.nome || "",
+                    composer: item.composer || "",
+                    category: item.category || "Geral",
+                }));
+
+                setSongsData((prev) => [...prev, ...normalized]);
+
+                alert(`Importados ${normalized.length} cantos da biblioteca JSON.`);
+            } catch (error) {
+                alert("Arquivo JSON inválido.");
+            }
+        };
+
+        reader.readAsText(file, "utf-8");
     };
 
     /* ------------------ PDF generation (A4 list and team 4-per-page) ------------------ */
@@ -345,20 +537,27 @@ export default function App() {
         doc.setFont("times", "bold");
         doc.setFontSize(14);
 
+        let lastSection = null;
+
         for (const item of flat) {
-            const line = `${item.section}`;
             const canto = `${item.numero ? item.numero + " — " : ""}${item.nome}`;
 
-            // Título da seção
-            doc.setFont("times", "bold");
-            doc.setFontSize(13);
-            const sectionLines = doc.splitTextToSize(line, maxWidth);
-            doc.text(sectionLines, margin, y);
-            y += sectionLines.length * 16;
+            // Mostra o título da seção somente quando mudar
+            if (item.section !== lastSection) {
+                lastSection = item.section;
 
-            // Nome do canto
+                doc.setFont("times", "bold");
+                doc.setFontSize(13);
+
+                const sectionLines = doc.splitTextToSize(item.section, maxWidth);
+                doc.text(sectionLines, margin, y);
+                y += sectionLines.length * 16;
+            }
+
+            // Nome do canto (sempre)
             doc.setFont("times", "normal");
             doc.setFontSize(12);
+
             const cantoLines = doc.splitTextToSize(canto, maxWidth);
             doc.text(cantoLines, margin + 10, y);
             y += cantoLines.length * 14;
@@ -367,14 +566,14 @@ export default function App() {
             if (item.composer) {
                 doc.setFont("times", "italic");
                 doc.setFontSize(10);
-                const compLine = doc.splitTextToSize(`Compositor: ${item.composer}`, maxWidth);
-                doc.text(compLine, margin + 10, y);
-                y += compLine.length * 12;
+                const comp = doc.splitTextToSize(`Compositor: ${item.composer}`, maxWidth);
+                doc.text(comp, margin + 10, y);
+                y += comp.length * 12;
             }
 
             y += 12;
 
-            // Próxima página?
+            // Quebra de página
             if (y > doc.internal.pageSize.getHeight() - margin) {
                 doc.addPage();
                 y = margin;
@@ -385,7 +584,7 @@ export default function App() {
         doc.save(filename);
     };
 
-    // Team PDF: 4 copies per A4 page
+    // Team PDF: adaptado para 1 página (até 10 cantos) ou 2 páginas (11+ cantos)
     const generateTeamPDF = () => {
         const doc = new jsPDF({ unit: "pt", format: "a4" });
 
@@ -394,7 +593,7 @@ export default function App() {
         const margin = 30;
 
         const colWidth = (pageWidth - margin * 2) / 2;
-        const rowHeight = (pageHeight - margin * 2) / 2;
+        const maxTextWidth = colWidth - 40;
 
         const flat = flattenSelected(selectedSongs, sections);
 
@@ -403,62 +602,91 @@ export default function App() {
             canto: `${it.numero ? it.numero + " — " : ""}${it.nome}`
         }));
 
-        const quadrants = [
-            { x: margin, y: margin },
-            { x: margin + colWidth, y: margin },
-            { x: margin, y: margin + rowHeight },
-            { x: margin + colWidth, y: margin + rowHeight },
-        ];
+        /* -------------------------------
+           Função melhorada para o bloco
+           (borda dinâmica + título multiline)
+        --------------------------------*/
+        const drawBlock = (x, y) => {
+            let cursorY = y + 20;
 
-        doc.setFont("times", "normal");
-        doc.setFontSize(11);
-
-        quadrants.forEach((pos) => {
-            // Borda discreta
-            doc.setDrawColor(199, 126, 74); // dourado CMV
-            doc.rect(pos.x, pos.y, colWidth - 8, rowHeight - 8);
-
-            const textX = pos.x + 12;
-            let y = pos.y + 24;
-
-            // Cabeçalho
+            // === 1. TÍTULO MULTILINHA ===
             doc.setFont("times", "bold");
             doc.setFontSize(13);
-            doc.text(massName || "Planejador de Missas", textX, y);
-            y += 16;
 
+            const titleLines = doc.splitTextToSize(massName || "Planejador de Missas", maxTextWidth);
+            doc.text(titleLines, x + 12, cursorY);
+            cursorY += titleLines.length * 14;
+
+            // === 2. DATA ===
             doc.setFont("times", "italic");
             doc.setFontSize(10);
-            doc.text(`Data: ${massDate}`, textX, y);
-            y += 14;
+            doc.text(`Data: ${massDate}`, x + 12, cursorY);
+            cursorY += 14;
 
+            // === 3. LINHA DIVISÓRIA ===
             doc.setDrawColor(199, 126, 74);
-            doc.line(textX, y, textX + colWidth - 40, y);
-            y += 14;
+            doc.line(x + 12, cursorY, x + colWidth - 28, cursorY);
+            cursorY += 12;
 
-            // Conteúdo
+            // === 4. LISTA DE CANTOS ===
             doc.setFont("times", "normal");
-            linesFull.forEach((entry) => {
-                // Seção (momento litúrgico)
-                doc.setFont("times", "bold");
-                doc.setFontSize(11);
-                const secLines = doc.splitTextToSize(entry.section.toUpperCase(), colWidth - 40);
-                doc.text(secLines, textX, y);
-                y += secLines.length * 12;
+            doc.setFontSize(11);
 
-                // Canto (número + nome)
+            let lastSection = null;
+
+            linesFull.forEach((entry) => {
+                // MOSTRAR A SEÇÃO APENAS UMA VEZ
+                if (entry.section !== lastSection) {
+                    lastSection = entry.section;
+
+                    doc.setFont("times", "bold");
+                    doc.setFontSize(11);
+                    const secLines = doc.splitTextToSize(entry.section.toUpperCase(), maxTextWidth);
+                    doc.text(secLines, x + 12, cursorY);
+                    cursorY += secLines.length * 12;
+                }
+
+                // CANTO
                 doc.setFont("times", "normal");
                 doc.setFontSize(11);
-                const cantoLines = doc.splitTextToSize(entry.canto, colWidth - 40);
-                doc.text(cantoLines, textX, y);
-                y += cantoLines.length * 12;
+                const cantoLines = doc.splitTextToSize(entry.canto, maxTextWidth);
+                doc.text(cantoLines, x + 12, cursorY);
+                cursorY += cantoLines.length * 12;
 
-                // Espaço extra entre itens
-                y += 8;
+                cursorY += 6; // espaçamento
             });
-        });
 
-        const filename = `${(massName || "missal").replace(/\s+/g, "_")}_equipe_${massDate}.pdf`;
+            // === 5. DESENHAR BORDA DINÂMICA ===
+            const blockHeight = cursorY - y + 10; // sempre até o final do último canto
+
+            doc.setDrawColor(199, 126, 74);
+            doc.rect(x, y, colWidth - 8, blockHeight);
+        };
+
+        // ===================================
+        // LISTA PEQUENA — 1 página, 4 blocos
+        // ===================================
+        if (linesFull.length <= 10) {
+            drawBlock(margin, margin);
+            drawBlock(margin + colWidth, margin);
+            drawBlock(margin, margin + pageHeight / 2);
+            drawBlock(margin + colWidth, margin + pageHeight / 2);
+
+            const filename = `${(massName || "missal")}_equipe_${massDate}.pdf`;
+            return doc.save(filename);
+        }
+
+        // ===================================
+        // LISTA GRANDE — 2 páginas, 2 blocos
+        // ===================================
+        drawBlock(margin, margin);
+        drawBlock(margin + colWidth, margin);
+
+        doc.addPage();
+        drawBlock(margin, margin);
+        drawBlock(margin + colWidth, margin);
+
+        const filename = `${(massName || "missal")}_equipe_${massDate}.pdf`;
         doc.save(filename);
     };
 
@@ -482,7 +710,20 @@ export default function App() {
     };
 
     const exportJSON = () => {
-        const payload = { missa: massName, data: massDate, cantos: selectedSongs };
+        // ordenar seções conforme a ordem litúrgica atual
+        const ordered = {};
+        sections.forEach(sec => {
+            if (selectedSongs[sec]) {
+                ordered[sec] = selectedSongs[sec];
+            }
+        });
+
+        const payload = {
+            missa: massName,
+            data: massDate,
+            cantos: ordered
+        };
+
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
         downloadBlob(blob, `${(massName || "missal").replace(/\s+/g, "_")}_${massDate}.json`);
     };
@@ -492,11 +733,20 @@ export default function App() {
     return (
         <>
             <Header />
+            <div className="max-w-6xl mx-auto mt-4 mb-6">
+                <button
+                    onClick={() => setShowHelp(true)}
+                    className="px-4 py-2 rounded-xl btn-cmv-outline"
+                >
+                    📘 Como usar o Missal-Planner
+                </button>
+            </div>
+
 
             <div className="min-h-screen p-6" style={{ background: "var(--cmv-bg, #f1e5ae)", color: "var(--cmv-text, #222)", fontFamily: "var(--font-sans, system-ui)" }}>
                 <div className="max-w-6xl mx-auto mb-6">
                     <input type="text" placeholder="Nome da Missa" value={massName} onChange={(e) => setMassName(e.target.value)}
-                        className="w-full p-4 text-2xl font-bold rounded-xl shadow-sm cmv-border"
+                        className="w-full p-2 text-1xl font-bold rounded-xl shadow-sm cmv-border"
                         style={{ background: "white", color: "var(--cmv-text)", fontFamily: "var(--font-heading)" }} />
 
                     <div className="mt-3">
@@ -516,42 +766,27 @@ export default function App() {
                                     <button
                                         onClick={() => setShowAddModal(true)}
                                         className="px-5 py-2 rounded-xl font-semibold btn-cmv-outline"
-                                        onMouseEnter={() => setTooltip('add')}
-                                        onMouseLeave={() => setTooltip(null)}
                                     >
                                         Novo Canto
                                     </button>
-
-                                    {tooltip === 'add' && (
-                                        <div
-                                            className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 tooltip-cmv z-50"
-                                            style={{ transform: "translateX(-50%)" }}
-                                        >
-                                            Adicionar um novo canto à biblioteca
-                                        </div>
-                                    )}
                                 </div>
 
-                                <Tooltip text="Importar lista de cantos salva (.json)">
-                                    <label className="px-5 py-2 rounded-xl cursor-pointer font-semibold btn-cmv-outline">
-                                        Importar lista de cantos salva
-                                        <input
-                                            type="file"
-                                            accept=".json"
-                                            onChange={(e) => importJSON(e.target.files[0])}
-                                            className="hidden"
-                                        />
-                                    </label>
-                                </Tooltip>
+                                <label className="px-5 py-2 rounded-xl cursor-pointer font-semibold btn-cmv-outline">
+                                    Importar lista de cantos salva
+                                    <input
+                                        type="file"
+                                        accept=".json"
+                                        onChange={(e) => importJSON(e.target.files[0])}
+                                        className="hidden"
+                                    />
+                                </label>
 
-                                <Tooltip text="Ajustes do programa">
-                                    <button
-                                        onClick={() => setShowSettings(true)}
-                                        className="px-5 py-2 rounded-xl font-semibold btn-cmv-outline"
-                                    >
-                                        ⚙️ Configurações
-                                    </button>
-                                </Tooltip>
+                                <button
+                                    onClick={() => setShowSettings(true)}
+                                    className="px-5 py-2 rounded-xl font-semibold btn-cmv-outline"
+                                >
+                                    ⚙️ Configurações
+                                </button>
                             </div>
 
                             <Filters globalSearch={globalSearch} setGlobalSearch={setGlobalSearch}
@@ -570,17 +805,11 @@ export default function App() {
                         </div>
 
                         <div className="mt-6 flex flex-wrap gap-3">
-                            <Tooltip text="Exportar missa como JSON">
-                                <button onClick={exportJSON} className="px-3 py-2 rounded btn-cmv-outline">Export .json</button>
-                            </Tooltip>
+                            <button onClick={exportJSON} className="px-3 py-2 rounded btn-cmv-outline">Export .json</button>
 
-                            <Tooltip text="Gerar PDF A4 (lista)">
-                                <button onClick={generatePDF} className="px-3 py-2 rounded btn-cmv-outline">Gerar PDF</button>
-                            </Tooltip>
+                            <button onClick={generatePDF} className="px-3 py-2 rounded btn-cmv-outline">Gerar PDF</button>
 
-                            <Tooltip text="Gerar PDF para equipe (4 por página)">
-                                <button onClick={generateTeamPDF} className="px-3 py-2 rounded btn-cmv-outline">PDF Equipe</button>
-                            </Tooltip>
+                            <button onClick={generateTeamPDF} className="px-3 py-2 rounded btn-cmv-outline">PDF Equipe</button>
                         </div>
                     </div>
 
@@ -603,26 +832,48 @@ export default function App() {
 
                         <div className="space-y-3">
 
-                            <Tooltip text="Importar biblioteca CSV">
-                                <label className="px-4 py-2 rounded-xl cursor-pointer btn-cmv-outline w-full block text-left">
-                                    Importar CSV — Biblioteca
-                                    <input
-                                        type="file"
-                                        accept=".csv"
-                                        ref={fileInputLibraryRef}
-                                        onChange={(e) => importLibraryCSV(e.target.files[0])}
-                                        className="hidden"
-                                    />
-                                </label>
-                            </Tooltip>
+                            <label className="px-4 py-2 rounded-xl cursor-pointer btn-cmv-outline w-full block text-left">
+                                Importar CSV — Biblioteca
+                                <input
+                                    type="file"
+                                    accept=".csv"
+                                    ref={fileInputLibraryRef}
+                                    onChange={(e) => importLibraryCSV(e.target.files[0])}
+                                    className="hidden"
+                                />
+                            </label>
 
-                            <Tooltip text="Exportar biblioteca CSV">
-                                <button
-                                    onClick={exportLibraryAsCSV}
-                                    className="px-4 py-2 rounded-xl btn-cmv-outline w-full">
-                                    Exportar CSV — Biblioteca
-                                </button>
-                            </Tooltip>
+                            <button
+                                onClick={exportLibraryAsCSV}
+                                className="px-4 py-2 rounded-xl btn-cmv-outline w-full">
+                                Exportar CSV — Biblioteca
+                            </button>
+
+
+                            <button
+                                onClick={exportLibraryJSON}
+                                className="px-4 py-2 rounded-xl btn-cmv-outline w-full"
+                            >
+                                Exportar Biblioteca — JSON
+                            </button>
+
+                            <label className="px-4 py-2 rounded-xl cursor-pointer btn-cmv-outline w-full block text-left">
+                                Importar Biblioteca — JSON
+                                <input
+                                    type="file"
+                                    accept=".json"
+                                    onChange={(e) => importLibraryJSON(e.target.files[0])}
+                                    className="hidden"
+                                />
+                            </label>
+
+                            <button
+                                onClick={openDeleteLibraryModal}
+                                className="px-4 py-2 rounded-xl btn-cmv-outline w-full"
+                            >
+
+                                Eliminar canto da Biblioteca
+                            </button>
 
                         </div>
 
@@ -633,10 +884,117 @@ export default function App() {
                                 Fechar
                             </button>
                         </div>
+
                     </div>
                 </div>
             )}
 
+            {/* Modal Eliminar canto da Biblioteca */}
+            {showDeleteLibraryModal && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                    <div className="p-6 rounded-xl shadow-xl cmv-border"
+                        style={{ background: "white", width: "760px", maxHeight: "80vh", overflowY: "auto" }}>
+
+                        <h2 className="h-liturgico mb-4" style={{ fontSize: "1.6rem" }}>
+                            Eliminar canto da Biblioteca
+                        </h2>
+
+                        <div className="grid grid-cols-3 gap-4">
+                            {songsData.length === 0 && (
+                                <p>Nenhum canto na biblioteca.</p>
+                            )}
+
+                            {songsData.map((s) => (
+                                <div key={s.id} className="p-4 border rounded-md bg-white">
+                                    <div className="font-bold" style={{ color: "var(--cmv-text)" }}>
+                                        {s.nome || s.title}
+                                    </div>
+
+                                    <div style={{ color: "var(--cmv-muted)", marginBottom: "0.5rem" }}>
+                                        {s.numero ? `#${s.numero}` : ""} {s.compositor ? ` — ${s.compositor}` : ""}
+                                    </div>
+
+                                    <button
+                                        className="px-3 py-1 rounded bg-red-600 text-white"
+                                        onClick={() => {
+                                            if (window.confirm(`Eliminar o canto "${s.nome || s.title}"?`)) {
+                                                deleteSongFromLibrary(s.id);
+                                            }
+                                        }}
+                                    >
+                                        Eliminar
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex justify-end mt-6">
+                            <button
+                                onClick={() => setShowDeleteLibraryModal(false)}
+                                className="px-4 py-2 rounded-xl btn-cmv-outline"
+                            >
+                                Fechar
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de Ajuda */}
+            {showHelp && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                    <div className="p-6 rounded-xl shadow-xl cmv-border"
+                        style={{ background: "white", width: "620px", maxHeight: "80vh", overflowY: "auto" }}>
+
+                        <h2 className="h-liturgico mb-4" style={{ fontSize: "1.6rem" }}>
+                            📘 Como usar o Missal-Planner
+                        </h2>
+
+                        <p style={{ marginBottom: "1rem", color: "var(--cmv-text)" }}>
+                            O Missal-Planner nasceu do desejo de ajudar as equipes de canto
+                            da Comunidade Missionária de Villaregia a organizar todos os
+                            momentos de oração cantada das Missas e das Adorações.
+                        </p>
+
+                        <p className="mb-2">
+                            Ele foi pensado para oferecer:
+                        </p>
+
+                        <ul className="list-disc ml-5 space-y-1" style={{ color: "var(--cmv-text)" }}>
+                            <li>Uma biblioteca de cantos sempre atualizada</li>
+                            <li>Escolha rápida dos cantos por momentos litúrgicos</li>
+                            <li>Planejamento de Missa e Adoração com clareza</li>
+                            <li>Geração automática de PDFs para a equipe</li>
+                            <li>Exportação e importação em CSV ou JSON</li>
+                            <li>Autosave automático: o app nunca perde seu trabalho</li>
+                        </ul>
+
+                        <h3 className="mt-4 font-semibold" style={{ color: "var(--cmv-text)" }}>
+                            Como funciona:
+                        </h3>
+
+                        <ol className="list-decimal ml-5 space-y-1" style={{ color: "var(--cmv-text)" }}>
+                            <li>Escolha o modo (Missa / Adoração).</li>
+                            <li>Filtre, procure e selecione cantos na biblioteca.</li>
+                            <li>Adicione cantos aos momentos litúrgicos desejados.</li>
+                            <li>Edite ou remova cantos conforme necessário.</li>
+                            <li>Gere PDFs para impressão.</li>
+                            <li>Use a seção Configurações para importar/exportar bibliotecas personalizadas.</li>
+                        </ol>
+
+                        <div className="flex justify-end mt-6">
+                            <button
+                                onClick={() => setShowHelp(false)}
+                                className="px-4 py-2 rounded-xl btn-cmv-outline"
+                            >
+                                Fechar
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            )}
 
             <ModalAddSong visible={showAddModal} onClose={() => setShowAddModal(false)} draft={newSongDraft} setDraft={setNewSongDraft} onSave={saveNewSong} />
             <ModalSelectSections visible={showSectionModal} pendingSong={pendingSong} sections={sections} pendingSelections={pendingSelections} setPendingSelections={setPendingSelections} onConfirm={confirmSectionSelection} onClose={() => setShowSectionModal(false)} />
