@@ -25,7 +25,6 @@ missal-planner/
 ├─ package.json
 └─ ...
 ```
-
 ## ▶️ Come Eseguire
 Requisiti:
 - **Node.js 18+**
