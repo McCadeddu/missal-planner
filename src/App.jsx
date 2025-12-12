@@ -146,6 +146,9 @@ export default function App() {
     const fileInputLibraryRef = useRef();
     const fileHandleRef = useRef(null);
 
+    // Ref para controlar foco do campo de pesquisa (Filters)
+    const searchInputRef = useRef(null);
+
     /* ===========================
        Inicialização (CSV + Autosave)
        =========================== */
@@ -264,6 +267,11 @@ export default function App() {
             localStorage.setItem(AUTOSAVE_MODE, mode);
         } catch (e) { }
     }, [mode]);
+
+    // UX: foco automático no campo de pesquisa ao abrir o app
+    useEffect(() => {
+        searchInputRef.current?.focus();
+    }, []);
 
     /* ===========================
        IPC: receber atualizações de texto vindas do Operator
@@ -532,11 +540,19 @@ export default function App() {
                 if (SINGLE_ONLY.has(sec)) {
                     next[sec] = [{ ...pendingSong }];
                 } else {
-                    next[sec] = Array.isArray(next[sec]) ? [...next[sec], { ...pendingSong }] : [{ ...pendingSong }];
+                    next[sec] = Array.isArray(next[sec])
+                        ? [...next[sec], { ...pendingSong }]
+                        : [{ ...pendingSong }];
                 }
             }
             return next;
         });
+
+        // 🔁 UX: limpar pesquisa e voltar foco automaticamente
+        setGlobalSearch("");
+        setTimeout(() => {
+            searchInputRef.current?.focus();
+        }, 0);
 
         setShowSectionModal(false);
         setPendingSong(null);
@@ -1040,7 +1056,7 @@ export default function App() {
                                 filterCategory={filterCategory} setFilterCategory={setFilterCategory}
                                 filterComposer={filterComposer} setFilterComposer={setFilterComposer}
                                 sortMode={sortMode} setSortMode={setSortMode}
-                                categoriesList={categoriesList} />
+                                categoriesList={categoriesList} searchInputRef={searchInputRef} />
 
                             <div className="mt-4">
                                 <LibraryPanel songs={filteredSongs} onAdd={handleLibraryAdd} onEdit={handleLibraryEdit} />

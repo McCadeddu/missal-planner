@@ -1,3 +1,4 @@
+import { useRef, useEffect } from "react";
 import React from "react";
 
 /**
@@ -10,7 +11,18 @@ import React from "react";
  *  - categoriesList
  */
 
-export default function Filters({ globalSearch, setGlobalSearch, filterCategory, setFilterCategory, filterComposer, setFilterComposer, sortMode, setSortMode, categoriesList }) {
+export default function Filters({
+    globalSearch,
+    setGlobalSearch,
+    filterCategory,
+    setFilterCategory,
+    filterComposer,
+    setFilterComposer,
+    sortMode,
+    setSortMode,
+    categoriesList,
+    searchInputRef // ⬅️ NOVO
+}) {
   return (
     <div className="w-full">
       <div className="flex flex-wrap gap-3 items-center">
@@ -23,7 +35,21 @@ export default function Filters({ globalSearch, setGlobalSearch, filterCategory,
 
         <div className="flex-1 min-w-[220px]">
           <label className="text-sm block mb-1" style={{ color: "var(--cmv-muted)" }}>Pesquisar</label>
-          <input type="text" placeholder="Pesquisar (nome, número, letra...)" value={globalSearch} onChange={(e) => setGlobalSearch(e.target.value)} className="w-full p-2 rounded" />
+                  <input
+                      ref={searchInputRef}
+                      type="text"
+                      placeholder="🔍 Pesquisar (nome, número, letra...)"
+                      value={globalSearch}
+                      onChange={(e) => setGlobalSearch(e.target.value)}
+                      className="w-full p-4 text-lg rounded-xl shadow-md focus:outline-none focus:ring-4"
+                      style={{
+                          border: "2px solid var(--cmv-primary)",
+                          backgroundColor: "#fff",
+                          color: "#222",
+                          fontWeight: "600",
+                          boxShadow: "0 0 0 3px rgba(0,68,170,0.15)",
+                      }}
+                  />
         </div>
 
         <div style={{ minWidth: 220 }}>
