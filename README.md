@@ -1,107 +1,184 @@
-# Missal Planner
+# Missal-Planner
+
+Aplicativo open-source para criar listas de canto litúrgico e projetar textos durante a missa.
+
+**Missal-Planner** é um projeto comunitário sob MIT License.  
+O objetivo é facilitar a organização das celebrações, impressão de listas e projeção de cantos.
+
+---
+
+## ✨ Funcionalidades
+
+- Gerador de listas de canto (PDF / JSON)
+- Projeção de textos litúrgicos com controle avançado de moldura
+- Biblioteca multilingue de cânticos
+- Suporte a múltiplos monitores e tela cheia (Electron)
+- Exportação para AppImage / deb / exe / dmg (via electron-builder)
+
+---
+
+## 🛠️ Desenvolvimento
+
+### Pré-requisitos
+
+- **Node.js 18+** (recomendado: Node 20)
+- npm
+- Linux • Windows • macOS
+
+---
+
+## ▶️ Rodar em modo desenvolvimento
+
+```bash
+git clone https://github.com/McCadeddu/missal-planner.git
+cd missal-planner
+npm install
+npm run dev
+```
+
+Depois acesse:
+
+```
+http://localhost:5173
+```
+
+Para rodar Electron em modo desenvolvimento:
+
+```bash
+npm run dev-electron
+```
+
+---
 
 ## 🌐 Línguas / Languages / Lingue
-[🇧🇷 Versão em Português](README.md)
-[🇬🇧 English Version](README.en.md)
-[🇮🇹 Versione in Italiano](README.it.md)
 
-Aplicativo minimalista para selecionar, organizar e compartilhar cantos litúrgicos para Missa e Adoração.
+- 🇧🇷 [Versão em Português](README.md)
+- 🇬🇧 [English Version](README.en.md)
+- 🇮🇹 [Versione in Italiano](README.it.md)
+
+> *(Garanta que os arquivos README.en.md e README.it.md estejam presentes.)*
+
+---
 
 ## 📘 Visão Geral
-O **Missal Planner** é uma ferramenta simples, leve e prática destinada a equipes de liturgia, ministros de música e missionários que precisam preparar celebrações com rapidez e clareza.
+
+O **Missal Planner** é uma ferramenta simples, leve e prática destinada a equipes de liturgia, ministros de música e missionários que precisam preparar celebrações com rapidez.
 
 Ele permite:
-- Criar listas de cantos
-- Editar e reorganizar músicas
-- Salvar e reabrir planejamentos
-- Exportar versões em **PDF**
-- Compartilhar por link
 
-Tudo com uma interface limpa, objetiva e fácil de usar.
+- Criar listas de cantos
+- Organizar e editar músicas
+- Gerar listas em **PDF**
+- Compartilhar arquivos
+- Projetar cantos ao vivo em tela cheia
+- Controlar moldura, zoom, navegação e tela cheia pelo painel do operador
+
+Interface limpa, objetiva e pensada para uso pastoral.
+
+---
 
 ## 📂 Estrutura do Projeto
+
 ```
 missal-planner/
 ├─ public/
 ├─ src/
 │  ├─ components/
 │  ├─ data/
+│  ├─ pages/
 │  ├─ App.jsx
 │  └─ ...
+├─ electron/
+│  ├─ main.cjs
+│  ├─ preload.js
+│  └─ ...
 ├─ package.json
-└─ ...
+└─ build/
 ```
 
-## ▶️ Como Rodar
-Requisitos:
-- **Node.js 18+**
+---
 
-Instale as dependências:
-```
-npm install
-```
-Execute o servidor de desenvolvimento:
-```
-npm run dev
-```
-Acesse no navegador:
-```
-http://localhost:5173
+## 🖥️ Build dos Aplicativos (Windows / Linux / macOS)
+
+Gere a build do frontend:
+
+```bash
+npm run build
 ```
 
-## 🚀 Roadmap
-Funcionalidades previstas na próxima fase de desenvolvimento:
-- Importação de arquivos JSON
-- Exportação em PDF com layout limpo
-- Compartilhamento por link
-- Busca interna
-- Filtro por número e nome
-- Ordenação de cantos
-- Modo "Adoração"
-- Editor de cantos cadastrados
-- Interface mais moderna com Tailwind
+Gere os instaladores para todas as plataformas (*no sistema operacional correspondente*):
+
+### Windows
+```bash
+npm run dist:win
+```
+
+### Linux
+```bash
+npm run dist:linux
+```
+
+### macOS
+```bash
+npm run dist:mac
+```
+
+Saída será salva em:
+
+```
+release/
+```
+
+---
+
+## 🚀 Roadmap (próximas funcionalidades)
+
+- Importação automática de JSON e arquivos externos
+- Editor avançado de cânticos
+- Modo "Adoração" para projeção contínua
+- Busca avançada por número, título ou trecho
+- Interface modernizada com transições
+- Exportação e backup de listas na nuvem
+
+---
 
 ## 🤝 Como Contribuir
+
 Contribuições são bem-vindas!
-- Para novas funcionalidades, abra uma *issue*
-- Para melhorias diretas, envie um *pull request*
+
+- Abra uma **issue** para novas funcionalidades
+- Envie um **pull request** com melhorias
+- Sugira ideias na aba **Discussions**
+
+---
 
 ## 🛠 Tecnologias Utilizadas
-- React + Vite
-- Tailwind CSS
-- html2pdf.js
-- Node.js 18+
+
+- **React + Vite**
+- **Electron 39**
+- **Tailwind CSS**
+- **html2pdf.js**
+- **Express (servidor interno opcional)**
+- **Electron Builder**
+
+---
 
 ## 🖼 Capturas de Tela
-> (*Adicione imagens aqui quando disponíveis*)
-- Tela inicial
-- Seleção de cantos
-- Lista da Missa
-- Exportação em PDF
+(*adicione quando quiser*)
 
-### Missal Planner – Overview
-A minimal and practical tool to organize liturgical songs for Mass and Eucharistic Adoration.
+- Tela inicial  
+- Painel do Operador  
+- Projeção em Tela Cheia  
+- Editor de texto dos cantos  
+- Lista gerada em PDF  
 
-Features:
-- Create song lists
-- Edit and reorder songs
-- Save and reopen plans
-- Export as **PDF**
-- Share via link
-
-### Run the project
-```
-npm install
-npm run dev
-```
-Visit:
-```
-http://localhost:5173
-```
+---
 
 ## 👤 Créditos
-Projeto desenvolvido por **Marco Cadeddu**.
-Apoio técnico pela comunidade open source.
 
-##
+Projeto desenvolvido por **Marco Cadeddu**  
+Apoio técnico: **Comunidade Open Source**
 
+---
+
+EOF

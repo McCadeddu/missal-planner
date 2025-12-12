@@ -1,7 +1,2 @@
-Set WshShell = CreateObject("WScript.Shell")
-
-' Caminho do seu BAT
-bat = "C:\projetos\missal-planner\iniciar-missal-planner.bat"
-
-' Executar oculto (0) e sem esperar terminar (False)
-WshShell.Run """" & bat & """", 0, False
+Set oShell = CreateObject("WScript.Shell")
+oShell.Run "Start-MissalPlanner.bat", 0, False

@@ -1,0 +1,6 @@
+missal-planner/
+ ├ src/
+ ├ public/
+ ├ package.json
+ ├ electron-main.cjs  ← CRIAR
+ └ preload.js         ← CRIAR

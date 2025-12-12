@@ -1,69 +1,107 @@
-# Missal Planner
+Missal Planner — English Version
 
-A minimal and practical application to organize liturgical songs for Mass and Eucharistic Adoration.
+A simple and minimalist application designed to organize liturgical songs for Mass and Eucharistic Adoration, and to display song lyrics during celebrations.
 
-## 📘 Overview
-Missal Planner is a lightweight tool designed for liturgy teams, musicians, and missionaries who need to prepare celebrations quickly and clearly.
+Overview
 
-Main features:
-- Create song lists
-- Edit and reorder pieces
-- Save and reopen planned celebrations
-- Export clean **PDF** sheets
-- Share via link
-- Simple and distraction-free interface
+Missal Planner is a lightweight and practical tool created for liturgy teams, musicians, cantors, and missionaries who need to prepare celebrations quickly, clearly, and in an organized way.
 
-## 📂 Project Structure
-```
+Key Features
+
+Create liturgical song lists
+
+Edit and reorder songs
+
+Save and reopen previous celebrations
+
+Export clean sheets as PDF
+
+Share lists through files or links
+
+Display song lyrics with:
+
+adjustable zoom
+
+page navigation
+
+movable and resizable text frame ("moldura")
+
+multi-monitor support
+
+fullscreen mode and bordered window mode
+
+Clean, distraction-free interface
+
+Project Structure
 missal-planner/
 ├─ public/
 ├─ src/
 │  ├─ components/
+│  ├─ pages/
 │  ├─ data/
 │  ├─ App.jsx
 │  └─ ...
+├─ electron/
+│  ├─ main.cjs
+│  ├─ preload.js
+│  └─ ...
 ├─ package.json
 └─ ...
-```
 
-## ▶️ How to Run
-Requirements:
-- **Node.js 18+**
+How to Run
+Requirements
 
-Install dependencies:
-```
+Node.js 18+ (recommended: 20)
+
+Install dependencies
 npm install
-```
-Start development server:
-```
+
+Run development mode (web)
 npm run dev
-```
-Open in your browser:
-```
+
+
+Open in browser:
+
 http://localhost:5173
-```
 
-## 🚀 Roadmap
-Upcoming planned features:
-- JSON import
-- PDF export with clean layout
-- Shareable links
-- Internal search
-- Filter by name and number
-- Song ordering options
-- "Adoration" mode
-- Song editor
-- More modern UI using Tailwind
+Run desktop mode (Electron)
+npm run dev-electron
 
-## 🤝 Contributing
-Contributions are welcome!
-- For new features, open an *issue*
-- For improvements, submit a *pull request*
+Roadmap
 
-## 👤 Credits
-Developed by **Marco Cadeddu**.
+Planned features for upcoming versions:
+
+JSON import
+
+Advanced PDF export
+
+Shareable links
+
+Internal search
+
+Filter by number and title
+
+Sorting options
+
+"Adoration Mode"
+
+Built-in song editor
+
+Modern UI based on Tailwind CSS
+
+Contributing
+
+Contributions are welcome.
+
+For new ideas or feature requests: open an issue
+
+For improvements or fixes: submit a pull request
+
+Credits
+
+Created by Marco Cadeddu.
 Supported by the open-source community.
 
-## 📄 License
-Distributed under the **MIT License**.
+License
 
+Released under the MIT License.

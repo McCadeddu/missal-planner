@@ -1,11 +1,10 @@
-// App.jsx — Missal Planner (versão final revisada, comentada)
 import React, { useState, useEffect, useRef } from "react";
 import Papa from "papaparse";
 import { jsPDF } from "jspdf";
 
 import Header from "./components/Header";
 
-// --- AUTOSAVE KEYS (constantes utilizadas para persistência local) ---
+// --- AUTOSAVE KEYS ---
 const AUTOSAVE_LIBRARY = "mp_library_v1";
 const SAVED_LISTS_KEY = "mp_saved_lists_v1";
 const AUTOSAVE_SELECTED = "mp_selected_v1";
@@ -22,11 +21,7 @@ import ModalSelectSections from "./components/modals/ModalSelectSections";
 
 import cantosCSV from "./data/cantos.csv?raw";
 
-/* ===========================
-   Constantes do domínio
-   =========================== */
-
-/* modos e seções padrão (mantidos conforme sua versão original) */
+/* modos e seções (mantidos) */
 const missaSections = [
     "Cantos para ensaiar",
     "Canto de Entrada / Hino L. das Horas",
@@ -59,7 +54,6 @@ const modes = {
     missaeadoracao: { label: "Missa + Adoração", sections: [...missaSections, ...adoracaoSections] },
 };
 
-/* conjuntos que aceitam apenas um item por seção */
 const SINGLE_ONLY = new Set([
     "Canto do Glória",
     "Aclamação ao Evangelho",
@@ -68,11 +62,7 @@ const SINGLE_ONLY = new Set([
     "Cordeiro de Deus cantado",
 ]);
 
-/* ===========================
-   Helpers utilitários
-   =========================== */
-
-/* cria um link e força download de um blob */
+/* util helpers */
 function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -84,7 +74,6 @@ function downloadBlob(blob, filename) {
     URL.revokeObjectURL(url);
 }
 
-/* achata a estrutura de selectedSongs em um array ordenado conforme sectionsOrder */
 function flattenSelected(selectedSongs, sectionsOrder = []) {
     const arr = [];
     for (const sec of sectionsOrder) {
@@ -100,57 +89,47 @@ function flattenSelected(selectedSongs, sectionsOrder = []) {
     return arr;
 }
 
-/* ===========================
-   Componente principal App
-   =========================== */
-
 export default function App() {
-    /* -----------------------
-       Estados principais
-       ----------------------- */
-    const [songsData, setSongsData] = useState([]); // biblioteca principal (cada item pode ter fullText)
+
+    const [songsData, setSongsData] = useState([]);
     const [showSavedLists, setShowSavedLists] = useState(false);
     const [savedLists, setSavedLists] = useState([]);
     const [mode, setMode] = useState("missa");
     const [sections, setSections] = useState(modes[mode].sections);
-    const [selectedSongs, setSelectedSongs] = useState({}); // cantos na missa atual (por seção)
+    const [selectedSongs, setSelectedSongs] = useState({});
 
     const [massName, setMassName] = useState("");
     const [massDate, setMassDate] = useState(() => new Date().toISOString().slice(0, 10));
 
-    // Biblioteca: filtros / busca / ordenação
+    // library controls
     const [globalSearch, setGlobalSearch] = useState("");
     const [filterCategory, setFilterCategory] = useState("Todas");
     const [filterComposer, setFilterComposer] = useState("");
     const [sortMode, setSortMode] = useState("added");
 
-    // Modais e formulários
+    // modals / pending
     const [showAddModal, setShowAddModal] = useState(false);
     const [newSongDraft, setNewSongDraft] = useState({ nome: "", numero: "", composer: "", category: "Geral" });
 
     const [showSectionModal, setShowSectionModal] = useState(false);
 
+    // Modal: Eliminar canto da Biblioteca
     const [showDeleteLibraryModal, setShowDeleteLibraryModal] = useState(false);
     const [songToDelete, setSongToDelete] = useState(null);
 
     const [pendingSong, setPendingSong] = useState(null);
     const [pendingSelections, setPendingSelections] = useState({});
 
+    // Modal: Informações do app / ajuda
     const [showHelp, setShowHelp] = useState(false);
-    const [showSettings, setShowSettings] = useState(false);
 
-    // Estado para feedback de atualização
-    const [updateStatus, setUpdateStatus] = useState(null);
-    const [updateChecking, setUpdateChecking] = useState(false);
+    // settings modal
+    const [showSettings, setShowSettings] = useState(false);
 
     const fileInputLibraryRef = useRef();
     const fileHandleRef = useRef(null);
 
-    /* ===========================
-       Inicialização (CSV + Autosave)
-       =========================== */
-
-    // 1) Carregar CSV embutido (apenas quando não há biblioteca salva)
+    // --- LOAD CSV APENAS SE NUNCA HOUVE AUTOSAVE ---
     useEffect(() => {
         if (!cantosCSV) return;
 
@@ -162,11 +141,11 @@ export default function App() {
                     const numero = (r["NÚMERO"] ?? r["NUMERO"] ?? "").toString().trim();
                     const category = (r["CATEGORIA"] ?? "Geral").toString().trim();
                     const composer = (r["COMPOSER"] ?? "").toString().trim();
-                    // Garantir campo fullText desde o início
-                    return { id: idx + 1, numero, nome, composer, category, fullText: "" };
+                    return { id: idx + 1, numero, nome, composer, category };
                 })
                 .filter((s) => s.nome);
 
+            // Só usar CSV se não houver biblioteca personalizada salva
             const savedLibraryRaw = localStorage.getItem(AUTOSAVE_LIBRARY);
 
             if (!savedLibraryRaw) {
@@ -175,14 +154,16 @@ export default function App() {
             } else {
                 console.log("CSV ignorado — biblioteca personalizada carregada do autosave");
             }
+
         } catch (e) {
             console.error(e);
         }
     }, []);
 
-    // 2) Carregar autosaves (biblioteca, seleção, nome/data da missa, modo)
+    // --- LOAD AUTOSAVE ON START (JSON always preferred) ---
     useEffect(() => {
         try {
+            // 1️⃣ Tenta carregar biblioteca salva (JSON)
             const savedLibraryRaw = localStorage.getItem(AUTOSAVE_LIBRARY);
             let savedLibrary = null;
 
@@ -194,24 +175,20 @@ export default function App() {
                 }
             }
 
+            // 2️⃣ Se existe biblioteca salva → usar SEMPRE
             if (savedLibrary && Array.isArray(savedLibrary) && savedLibrary.length > 0) {
-                // normalizar fullText
-                setSongsData(savedLibrary.map((s) => ({ ...s, fullText: s.fullText || "" })));
+                setSongsData(savedLibrary);
             }
 
-            const savedSelected = localStorage.getItem(AUTOSAVE_SELECTED);
-            if (savedSelected) {
-                try {
-                    const parsedSelected = JSON.parse(savedSelected);
-                    const normalized = {};
-                    for (const sec of Object.keys(parsedSelected)) {
-                        normalized[sec] = parsedSelected[sec].map((it) => ({ ...it, fullText: it.fullText || "" }));
-                    }
-                    setSelectedSongs(normalized);
-                } catch (e) {
-                    setSelectedSongs(JSON.parse(savedSelected));
-                }
+            // 3️⃣ Caso contrário → usa CSV embutido (primeiro uso)
+            else {
+                console.log("Usando biblioteca padrão do CSV (primeira inicialização).");
+                // Nada a fazer: o CSV será carregado pelo outro useEffect automaticamente
             }
+
+            // --- Outros autosaves (iguais ao seu código atual) ---
+            const savedSelected = localStorage.getItem(AUTOSAVE_SELECTED);
+            if (savedSelected) setSelectedSongs(JSON.parse(savedSelected));
 
             const savedMassName = localStorage.getItem(AUTOSAVE_MASSNAME);
             if (savedMassName) setMassName(savedMassName);
@@ -224,243 +201,13 @@ export default function App() {
                 setMode(savedMode);
                 setSections(modes[savedMode].sections);
             }
+
         } catch (e) {
             console.warn("Erro ao carregar autosave:", e);
         }
     }, []);
 
-    /* ===========================
-       Autosave reativo
-       =========================== */
-
-    useEffect(() => {
-        try {
-            localStorage.setItem(AUTOSAVE_LIBRARY, JSON.stringify(songsData));
-        } catch (e) {
-            console.warn("Erro ao salvar biblioteca:", e);
-        }
-    }, [songsData]);
-
-    useEffect(() => {
-        try {
-            localStorage.setItem(AUTOSAVE_SELECTED, JSON.stringify(selectedSongs));
-        } catch (e) { }
-    }, [selectedSongs]);
-
-    useEffect(() => {
-        try {
-            localStorage.setItem(AUTOSAVE_MASSNAME, massName);
-        } catch (e) { }
-    }, [massName]);
-
-    useEffect(() => {
-        try {
-            localStorage.setItem(AUTOSAVE_MASSDATE, massDate);
-        } catch (e) { }
-    }, [massDate]);
-
-    useEffect(() => {
-        try {
-            localStorage.setItem(AUTOSAVE_MODE, mode);
-        } catch (e) { }
-    }, [mode]);
-
-    /* ===========================
-       IPC: receber atualizações de texto vindas do Operator
-       Quando o Operator salva/atualiza um texto, o App atualiza
-       a biblioteca (songsData) e a seleção atual (selectedSongs).
-       =========================== */
-    useEffect(() => {
-        // se a API não existir (modo browser) apenas ignora
-        if (!window.missalAPI?.onSongTextUpdated) return;
-
-        const unsubscribe = window.missalAPI.onSongTextUpdated((payload) => {
-            // payload esperado: { id, fullText }
-            if (!payload || !payload.id) return;
-
-            const { id, fullText } = payload;
-
-            // 1) Atualiza a biblioteca (songsData)
-            setSongsData((prev) => {
-                const updated = prev.map((s) =>
-                    s.id === id ? { ...s, fullText } : s
-                );
-                try {
-                    localStorage.setItem(AUTOSAVE_LIBRARY, JSON.stringify(updated));
-                    // flag simples para sinalizar atualização externa (fallback)
-                    localStorage.setItem("mp_library_last_update", Date.now().toString());
-                } catch (e) { /* ignore storage errors */ }
-                return updated;
-            });
-
-            // 2) Atualiza a seleção atual (selectedSongs)
-            setSelectedSongs((prev) => {
-                const out = { ...prev };
-                for (const sec of Object.keys(out)) {
-                    out[sec] = out[sec].map((item) =>
-                        item.id === id ? { ...item, fullText } : item
-                    );
-                }
-                try {
-                    localStorage.setItem(AUTOSAVE_SELECTED, JSON.stringify(out));
-                } catch (e) { /* ignore */ }
-                return out;
-            });
-        });
-
-        return unsubscribe;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    useEffect(() => {
-        if (!window.missalAPI?.onUpdateAvailable) return;
-
-        const unsubscribeA = window.missalAPI.onUpdateAvailable((info) => {
-            setUpdateStatus(`Nova versão disponível: v${info.version}`);
-        });
-
-        const unsubscribeP = window.missalAPI.onUpdateProgress((p) => {
-            setUpdateStatus(`Baixando atualização: ${Math.floor(p.percent)}%`);
-        });
-
-        return () => {
-            unsubscribeA?.();
-            unsubscribeP?.();
-        };
-    }, []);
-
-    /* ===========================
-       Consistência: criar entradas ausentes na biblioteca
-       quando um canto é selecionado mas não existe
-       =========================== */
-
-    useEffect(() => {
-        const flatSelected = flattenSelected(selectedSongs, sections);
-
-        setSongsData((prev) => {
-            const existingIds = new Set(prev.map((s) => s.id));
-            const newOnes = [];
-
-            for (const item of flatSelected) {
-                if (!existingIds.has(item.id)) {
-                    newOnes.push({
-                        id: item.id,
-                        numero: item.numero || "",
-                        nome: item.nome || "",
-                        composer: item.composer || "",
-                        category: item.category || "Geral",
-                        fullText: item.fullText || "",
-                    });
-                }
-            }
-
-            if (newOnes.length > 0) {
-                return [...prev, ...newOnes];
-            }
-            return prev;
-        });
-    }, [selectedSongs, sections]);
-
-    /* ===========================
-       IPC: receber atualizações de texto vindas do Operator
-       (this is the single listener — evitar duplicações)
-       =========================== */
-
-    useEffect(() => {
-        // Proteção: se a API não existir (modo browser) ignora
-        if (!window.missalAPI?.onSongTextUpdated) return;
-
-        const unsubscribe = window.missalAPI.onSongTextUpdated((payload) => {
-            // payload esperado: { id, fullText }
-            if (!payload || !payload.id) return;
-
-            const { id, fullText } = payload;
-
-            // 1) Atualiza biblioteca (songsData)
-            setSongsData((prev) => {
-                const updated = prev.map((s) =>
-                    s.id === id ? { ...s, fullText } : s
-                );
-                try {
-                    localStorage.setItem(AUTOSAVE_LIBRARY, JSON.stringify(updated));
-                    // marcardor para fallback em outros contexts
-                    localStorage.setItem("mp_library_last_update", Date.now().toString());
-                } catch (e) { }
-                return updated;
-            });
-
-            // 2) Atualiza seleção atual (selectedSongs)
-            setSelectedSongs((prev) => {
-                // clonagem superficial por segurança
-                const out = { ...prev };
-                for (const sec of Object.keys(out)) {
-                    out[sec] = out[sec].map((item) =>
-                        item.id === id ? { ...item, fullText } : item
-                    );
-                }
-                try {
-                    localStorage.setItem(AUTOSAVE_SELECTED, JSON.stringify(out));
-                } catch (e) { }
-                return out;
-            });
-        });
-
-        return unsubscribe;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    /* ===========================
-       Fallback: detectar atualizações de biblioteca via localStorage
-       (útil quando Operator roda como janela separada que escreve localStorage)
-       =========================== */
-
-    useEffect(() => {
-        const onStorage = (e) => {
-            if (e.key === "mp_library_last_update") {
-                try {
-                    const raw = localStorage.getItem(AUTOSAVE_LIBRARY);
-                    if (raw) {
-                        const parsed = JSON.parse(raw);
-                        if (Array.isArray(parsed)) {
-                            setSongsData(parsed.map((s) => ({ ...s, fullText: s.fullText || "" })));
-                        }
-                    }
-                } catch (err) {
-                    console.error("Erro ao atualizar biblioteca via fallback:", err);
-                }
-            }
-        };
-
-        window.addEventListener("storage", onStorage);
-        return () => window.removeEventListener("storage", onStorage);
-    }, []);
-
-    /* ===========================
-       Filtragem e categorias
-       =========================== */
-
-    const filteredSongs = songsData
-        .filter((s) => {
-            if (filterCategory && filterCategory !== "Todas" && s.category !== filterCategory) return false;
-            if (filterComposer && !s.composer.toLowerCase().includes(filterComposer.toLowerCase())) return false;
-            if (globalSearch) {
-                const q = globalSearch.toLowerCase();
-                return (s.nome || "").toLowerCase().includes(q) || (s.numero || "").toLowerCase().includes(q) || (s.composer || "").toLowerCase().includes(q);
-            }
-            return true;
-        })
-        .sort((a, b) => {
-            if (sortMode === "nome") return a.nome.localeCompare(b.nome);
-            if (sortMode === "numero") return a.numero.localeCompare(b.numero);
-            return 0;
-        });
-
-    const categoriesList = Array.from(new Set(["Geral", ...songsData.map((s) => s.category)]));
-
-    /* ===========================
-       Saved lists utilities
-       =========================== */
-
+    // --- SISTEMA DE LISTAS SALVAS ------------------------------------
     const getSavedLists = () => {
         try {
             const raw = localStorage.getItem(SAVED_LISTS_KEY);
@@ -506,10 +253,111 @@ export default function App() {
         setSavedLists(lists);
     };
 
-    /* ===========================
-       Ações: adicionar / editar / remover / selecionar
-       =========================== */
 
+    // --- AUTOSAVE LIBRARY (salva JSON automaticamente quando modificada) ---
+    useEffect(() => {
+        try {
+            localStorage.setItem(AUTOSAVE_LIBRARY, JSON.stringify(songsData));
+        } catch (e) {
+            console.warn("Erro ao salvar biblioteca:", e);
+        }
+    }, [songsData]);
+
+    // --- GARANTIR QUE TODO CANTO NA LISTA EXISTE NA BIBLIOTECA ---
+    useEffect(() => {
+        const flatSelected = flattenSelected(selectedSongs, sections);
+
+        setSongsData(prev => {
+            const existingIds = new Set(prev.map(s => s.id));
+            const newOnes = [];
+
+            for (const item of flatSelected) {
+                if (!existingIds.has(item.id)) {
+                    newOnes.push({
+                        id: item.id,
+                        numero: item.numero || "",
+                        nome: item.nome || "",
+                        composer: item.composer || "",
+                        category: item.category || "Geral",
+                    });
+                }
+            }
+
+            if (newOnes.length > 0) {
+                return [...prev, ...newOnes];
+            }
+
+            return prev;
+        });
+    }, [selectedSongs]);
+
+    // --- AUTOSAVE SELECTED SONGS ---
+    useEffect(() => {
+        try {
+            localStorage.setItem(AUTOSAVE_SELECTED, JSON.stringify(selectedSongs));
+        } catch (e) { }
+    }, [selectedSongs]);
+
+    // --- AUTOSAVE MASS NAME ---
+    useEffect(() => {
+        try {
+            localStorage.setItem(AUTOSAVE_MASSNAME, massName);
+        } catch (e) { }
+    }, [massName]);
+
+    // --- AUTOSAVE MASS DATE ---
+    useEffect(() => {
+        try {
+            localStorage.setItem(AUTOSAVE_MASSDATE, massDate);
+        } catch (e) { }
+    }, [massDate]);
+
+    // --- AUTOSAVE MODE ---
+    useEffect(() => {
+        try {
+            localStorage.setItem(AUTOSAVE_MODE, mode);
+        } catch (e) { }
+    }, [mode]);
+
+    // --- AUTOSAVE LIBRARY ---
+    useEffect(() => {
+        try {
+            localStorage.setItem(AUTOSAVE_LIBRARY, JSON.stringify(songsData));
+        } catch (e) { }
+    }, [songsData]);
+
+    // --- UPDATE SECTIONS ON MODE CHANGE ---
+    useEffect(() => {
+        setSections(modes[mode].sections);
+        setSelectedSongs((prev) => {
+            const copy = { ...prev };
+            for (const sec of Object.keys(copy)) {
+                if (!modes[mode].sections.includes(sec)) delete copy[sec];
+            }
+            return copy;
+        });
+    }, [mode]);
+
+    /* filtered songs for library */
+    const filteredSongs = songsData
+        .filter((s) => {
+            if (filterCategory && filterCategory !== "Todas" && s.category !== filterCategory) return false;
+            if (filterComposer && !s.composer.toLowerCase().includes(filterComposer.toLowerCase())) return false;
+            if (globalSearch) {
+                const q = globalSearch.toLowerCase();
+                return (s.nome || "").toLowerCase().includes(q) || (s.numero || "").toLowerCase().includes(q) || (s.composer || "").toLowerCase().includes(q);
+            }
+            return true;
+        })
+        .sort((a, b) => {
+            if (sortMode === "nome") return a.nome.localeCompare(b.nome);
+            if (sortMode === "numero") return a.numero.localeCompare(b.numero);
+            return 0;
+        });
+
+    const categoriesList = Array.from(new Set(["Geral", ...songsData.map((s) => s.category)]));
+
+    /* actions */
     const openSectionModalForSong = (song) => {
         setPendingSong(song);
         const initial = {};
@@ -573,14 +421,7 @@ export default function App() {
             alert("Nome vazio");
             return;
         }
-        setSongsData((prev) => [
-            ...prev,
-            {
-                id: prev.length + 1,
-                fullText: "", // novo campo inicializado
-                ...newSongDraft,
-            },
-        ]);
+        setSongsData((prev) => [...prev, { id: prev.length + 1, ...newSongDraft }]);
         setShowAddModal(false);
         setNewSongDraft({ nome: "", numero: "", composer: "", category: "Geral" });
     };
@@ -594,6 +435,7 @@ export default function App() {
         setShowAddModal(true);
     };
 
+    // --- DELETE SONG FROM LIBRARY (CORRIGIDO) ---
     const deleteSongFromLibrary = (id) => {
         // Remove da biblioteca
         setSongsData(prev => prev.filter(song => song.id !== id));
@@ -609,18 +451,15 @@ export default function App() {
         });
     };
 
-    /* ===========================
-       CSV / JSON import & export
-       - preservam fullText onde aplicável
-       =========================== */
+    /* ------------------ CSV: export/import biblioteca ------------------ */
 
+    // Exportar biblioteca como CSV (compositor + categoria + nomenclatura padronizada)
     const exportLibraryAsCSV = () => {
         const rows = songsData.map((s) => ({
             "NÚMERO": s.numero || "",
             "NOME DO CANTO": s.nome || "",
             "COMPOSITOR": s.composer || "",
             "CATEGORIA": s.category || "Geral",
-            // NÃO incluímos fullText por padrão em CSV (pode inflar demais)
         }));
 
         const csv = Papa.unparse(rows, { header: true });
@@ -629,6 +468,7 @@ export default function App() {
         downloadBlob(blob, `biblioteca_atualizada_${new Date().toISOString().slice(0, 10)}.csv`);
     };
 
+    // Importar CSV para biblioteca (apenas colunas: numero, nome, category, composer são lidas)
     const importLibraryCSV = (file) => {
         if (!file) return;
 
@@ -642,12 +482,11 @@ export default function App() {
                         if (!nome) return null;
 
                         return {
-                            id: Date.now() + idx,
+                            id: Date.now() + idx, // sempre id único
                             numero: (r["NÚMERO"] ?? r["NUMERO"] ?? "").toString().trim(),
                             nome,
                             composer: (r["COMPOSITOR"] ?? "").toString().trim(),
                             category: (r["CATEGORIA"] ?? "Geral").toString().trim(),
-                            fullText: "",
                         };
                     })
                     .filter(Boolean);
@@ -661,15 +500,19 @@ export default function App() {
             error: (e) => alert("Erro ao importar CSV: " + e.message),
         });
     };
-
+    // Exportar biblioteca completa em JSON
     const exportLibraryJSON = () => {
         const blob = new Blob([JSON.stringify(songsData, null, 2)], {
             type: "application/json",
         });
 
-        downloadBlob(blob, `biblioteca_cantos_${new Date().toISOString().slice(0, 10)}.json`);
+        downloadBlob(
+            blob,
+            `biblioteca_cantos_${new Date().toISOString().slice(0, 10)}.json`
+        );
     };
 
+    // Importar biblioteca completa em JSON
     const importLibraryJSON = (file) => {
         if (!file) return;
 
@@ -684,14 +527,13 @@ export default function App() {
                     return;
                 }
 
-                // Normalizar e gerar IDs novos — preservando fullText se existir
+                // Normalizar e gerar IDs novos
                 const normalized = imported.map((item, idx) => ({
                     id: Date.now() + idx,
                     numero: item.numero || "",
                     nome: item.nome || "",
                     composer: item.composer || "",
                     category: item.category || "Geral",
-                    fullText: item.fullText || "",
                 }));
 
                 setSongsData((prev) => [...prev, ...normalized]);
@@ -705,10 +547,9 @@ export default function App() {
         reader.readAsText(file, "utf-8");
     };
 
-    /* ===========================
-       PDF generation (mantive suas funções e estilo)
-       =========================== */
+    /* ------------------ PDF generation (A4 list and team 4-per-page) ------------------ */
 
+    // CMV Minimalist A4 list
     const generatePDF = () => {
         const doc = new jsPDF({ unit: "pt", format: "a4" });
 
@@ -718,15 +559,15 @@ export default function App() {
 
         let y = margin;
 
-        // ===========================
         // Cabeçalho CMV
-        // ===========================
         y += 12;
         doc.setDrawColor(199, 126, 74);
         doc.line(margin, y, pageWidth - margin, y);
         y += 14;
 
         doc.setFont("times", "bold");
+        doc.setFontSize(20);
+
         doc.setFontSize(16);
         doc.text(massName || "Planejador de Missas", pageWidth / 2, y, { align: "center" });
         y += 20;
@@ -740,37 +581,35 @@ export default function App() {
         doc.line(margin, y, pageWidth - margin, y);
         y += 25;
 
-        // ===========================
-        // Lista litúrgica
-        // ===========================
+        // Corpo – lista litúrgica
         const flat = flattenSelected(selectedSongs, sections);
+
+        doc.setFont("times", "bold");
+        doc.setFontSize(14);
+
         let lastSection = null;
 
         for (const item of flat) {
+            const canto = `${item.numero ? item.numero + " — " : ""}${item.nome}`;
 
-            // SEÇÃO — aparece apenas quando muda
+            // Mostra o título da seção somente quando mudar
             if (item.section !== lastSection) {
                 lastSection = item.section;
 
                 doc.setFont("times", "bold");
-                doc.setTextColor(0, 68, 170); // azul CMV
                 doc.setFontSize(13);
 
-                const secLines = doc.splitTextToSize(item.section, maxWidth);
-                doc.text(secLines, margin, y);
-                y += secLines.length * 16;
-
-                doc.setTextColor(0, 0, 0); // reset back to black
+                const sectionLines = doc.splitTextToSize(item.section, maxWidth);
+                doc.text(sectionLines, margin, y);
+                y += sectionLines.length * 16;
             }
 
-            // CANTO em maiúsculo e negrito
-            const canto = `${item.numero ? item.numero + " — " : ""}${item.nome}`.toUpperCase();
-
-            doc.setFont("times", "bold");
+            // Nome do canto (sempre)
+            doc.setFont("times", "normal");
             doc.setFontSize(12);
 
             const cantoLines = doc.splitTextToSize(canto, maxWidth);
-            doc.text(cantoLines, margin + 12, y);
+            doc.text(cantoLines, margin + 10, y);
             y += cantoLines.length * 14;
 
             // Compositor
@@ -778,11 +617,11 @@ export default function App() {
                 doc.setFont("times", "italic");
                 doc.setFontSize(10);
                 const comp = doc.splitTextToSize(`Compositor: ${item.composer}`, maxWidth);
-                doc.text(comp, margin + 12, y);
+                doc.text(comp, margin + 10, y);
                 y += comp.length * 12;
             }
 
-            y += 10;
+            y += 12;
 
             // Quebra de página
             if (y > doc.internal.pageSize.getHeight() - margin) {
@@ -795,6 +634,7 @@ export default function App() {
         doc.save(filename);
     };
 
+    // Team PDF: adaptado para 1 página (até 10 cantos) ou 2 páginas (11+ cantos)
     const generateTeamPDF = () => {
         const doc = new jsPDF({ unit: "pt", format: "a4" });
 
@@ -809,65 +649,73 @@ export default function App() {
 
         const linesFull = flat.map((it) => ({
             section: it.section,
-            canto: `${it.numero ? it.numero + " — " : ""}${it.nome}`.toUpperCase(),
+            canto: `${it.numero ? it.numero + " — " : ""}${it.nome}`
         }));
 
+        /* -------------------------------
+           Função melhorada para o bloco
+           (borda dinâmica + título multiline)
+        --------------------------------*/
         const drawBlock = (x, y) => {
             let cursorY = y + 20;
 
-            // Título
+            // === 1. TÍTULO MULTILINHA ===
             doc.setFont("times", "bold");
             doc.setFontSize(13);
+
             const titleLines = doc.splitTextToSize(massName || "Planejador de Missas", maxTextWidth);
             doc.text(titleLines, x + 12, cursorY);
             cursorY += titleLines.length * 14;
 
-            // Data
+            // === 2. DATA ===
             doc.setFont("times", "italic");
             doc.setFontSize(10);
             doc.text(`Data: ${massDate}`, x + 12, cursorY);
             cursorY += 14;
 
-            // Linha
+            // === 3. LINHA DIVISÓRIA ===
             doc.setDrawColor(199, 126, 74);
             doc.line(x + 12, cursorY, x + colWidth - 28, cursorY);
-            cursorY += 14;
+            cursorY += 12;
+
+            // === 4. LISTA DE CANTOS ===
+            doc.setFont("times", "normal");
+            doc.setFontSize(11);
 
             let lastSection = null;
 
-            for (const entry of linesFull) {
-
-                // SEÇÃO — azul CMV
+            linesFull.forEach((entry) => {
+                // MOSTRAR A SEÇÃO APENAS UMA VEZ
                 if (entry.section !== lastSection) {
                     lastSection = entry.section;
 
                     doc.setFont("times", "bold");
-                    doc.setFontSize(13); // mesmo tamanho do PDF normal
-                    doc.setTextColor(0, 68, 170); // azul CMV (#0044aa)
-
-                    const secLines = doc.splitTextToSize(entry.section, maxTextWidth);
+                    doc.setFontSize(11);
+                    const secLines = doc.splitTextToSize(entry.section.toUpperCase(), maxTextWidth);
                     doc.text(secLines, x + 12, cursorY);
                     cursorY += secLines.length * 12;
-                                        
                 }
 
-                // CANTO — mais evidente
-                doc.setFont("times", "bold");
-                doc.setFontSize(12);
-                doc.setTextColor(0, 0, 0);
-
+                // CANTO
+                doc.setFont("times", "normal");
+                doc.setFontSize(11);
                 const cantoLines = doc.splitTextToSize(entry.canto, maxTextWidth);
                 doc.text(cantoLines, x + 12, cursorY);
                 cursorY += cantoLines.length * 12;
 
-                cursorY += 6;
-            }
+                cursorY += 6; // espaçamento
+            });
 
-            const blockHeight = cursorY - y + 10;
+            // === 5. DESENHAR BORDA DINÂMICA ===
+            const blockHeight = cursorY - y + 10; // sempre até o final do último canto
+
             doc.setDrawColor(199, 126, 74);
             doc.rect(x, y, colWidth - 8, blockHeight);
         };
 
+        // ===================================
+        // LISTA PEQUENA — 1 página, 4 blocos
+        // ===================================
         if (linesFull.length <= 10) {
             drawBlock(margin, margin);
             drawBlock(margin + colWidth, margin);
@@ -878,6 +726,9 @@ export default function App() {
             return doc.save(filename);
         }
 
+        // ===================================
+        // LISTA GRANDE — 2 páginas, 2 blocos
+        // ===================================
         drawBlock(margin, margin);
         drawBlock(margin + colWidth, margin);
 
@@ -889,10 +740,7 @@ export default function App() {
         doc.save(filename);
     };
 
-    /* ===========================
-       Import / Export de listas (JSON usado pela aplicação)
-       - Import mantém fullText onde existir
-       =========================== */
+    /* ------------------ Import/Export JSON (mantive) ------------------ */
 
     const importJSON = (file) => {
         if (!file) return;
@@ -902,13 +750,7 @@ export default function App() {
                 const parsed = JSON.parse(e.target.result);
                 setMassName(parsed.missa || "");
                 setMassDate(parsed.data || "");
-                if (parsed.cantos && typeof parsed.cantos === "object") {
-                    const next = {};
-                    for (const sec of Object.keys(parsed.cantos)) {
-                        next[sec] = parsed.cantos[sec].map((item) => ({ ...item, fullText: item.fullText || "" }));
-                    }
-                    setSelectedSongs(next);
-                }
+                if (parsed.cantos && typeof parsed.cantos === "object") setSelectedSongs(parsed.cantos);
                 alert("Arquivo JSON importado.");
             } catch {
                 alert("Arquivo JSON inválido.");
@@ -920,60 +762,23 @@ export default function App() {
     const exportJSON = () => {
         // ordenar seções conforme a ordem litúrgica atual
         const ordered = {};
-        sections.forEach((sec) => {
+        sections.forEach(sec => {
             if (selectedSongs[sec]) {
-                ordered[sec] = selectedSongs[sec].map((item) => ({
-                    ...item,
-                    fullText: item.fullText || "",
-                }));
+                ordered[sec] = selectedSongs[sec];
             }
         });
 
         const payload = {
             missa: massName,
             data: massDate,
-            cantos: ordered,
+            cantos: ordered
         };
 
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
         downloadBlob(blob, `${(massName || "missal").replace(/\s+/g, "_")}_${massDate}.json`);
     };
 
-    const checkForUpdates = async () => {
-    if (!window.missalAPI?.checkForUpdates) {
-        alert("Atualizações automáticas estão disponíveis somente na versão Electron.");
-        return;
-    }
-
-    setUpdateChecking(true);
-    setUpdateStatus("Verificando atualizações…");
-
-    try {
-        const resp = await window.missalAPI.checkForUpdates();
-
-        setUpdateChecking(false);
-
-        if (resp.error) {
-            setUpdateStatus("Erro ao buscar atualização.");
-            return;
-        }
-
-        if (resp.found) {
-            setUpdateStatus(`Nova versão disponível: v${resp.version}. Download iniciará automaticamente.`);
-        } else {
-            setUpdateStatus("Você já está usando a versão mais recente.");
-        }
-
-    } catch (err) {
-        setUpdateChecking(false);
-        setUpdateStatus("Erro inesperado.");
-    }
-};
-
-
-    /* ===========================
-       UI: renderização principal
-       =========================== */
+    /* ------------------ UI ------------------ */
 
     return (
         <>
@@ -981,7 +786,7 @@ export default function App() {
 
             <div
                 className="max-w-6xl mx-auto mt-4 mb-6 p-4 rounded-xl"
-                style={{ backgroundColor: "#0d6efd" }}
+                style={{ backgroundColor: "#0d6efd" }}   // ← azul bonito
             >
                 <button
                     onClick={() => setShowHelp(true)}
@@ -1007,7 +812,11 @@ export default function App() {
                 <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="col-span-2">
                         <div className="p-4 rounded-xl shadow-md cmv-border" style={{ background: "white" }}>
+
+                            {/* Barra principal reorganizada */}
                             <div className="w-full flex flex-wrap items-center gap-4 mb-6">
+
+                                {/* Botão Abrir Lista de Cantos (primeiro botão visível abaixo do título/data) */}
                                 <button
                                     onClick={() => {
                                         setSavedLists(getSavedLists());
@@ -1054,6 +863,8 @@ export default function App() {
                                     Novo Canto
                                 </button>
                             </div>
+
+
                         </div>
 
                         <div className="mt-6">
@@ -1071,10 +882,12 @@ export default function App() {
 
                             <button onClick={generateTeamPDF} className="px-3 py-2 rounded btn-cmv-outline">PDF Equipe</button>
 
+                            {/* NOVO BOTÃO PARA ABRIR A PROJEÇÃO */}
                             <button
                                 onClick={() => {
                                     const flat = flattenSelected(selectedSongs, sections);
 
+                                    // 💡 Proteção para ambiente navegador (não Electron)
                                     if (!window.missalAPI?.openOperatorAndProjection) {
                                         alert(
                                             "A projeção funciona somente na versão Electron.\n" +
@@ -1089,8 +902,8 @@ export default function App() {
                             >
                                 🎥 Abrir Projeção
                             </button>
-                        </div>
-                    </div>
+                        </div>   {/* <-- ESTA LINHA QUE FALTAVA!!! */}
+                    </div>   {/* col-span-2 */}
 
                     <div className="col-span-1">
                         <SidebarPanel mode={mode} setMode={setMode} modes={modes} sections={sections} categoriesList={categoriesList} setFilterCategory={setFilterCategory} setSelectedSongs={setSelectedSongs} />
@@ -1104,27 +917,14 @@ export default function App() {
                     <div className="p-6 rounded-xl shadow-xl cmv-border"
                         style={{ background: "white", width: "420px" }}>
 
-                        <h2 className="h-liturgico mb-4" style={{ fontSize: "1.6rem" }}>
+                        <h2 className="h-liturgico mb-4"
+                            style={{ fontSize: "1.6rem" }}>
                             ⚙️ Configurações
                         </h2>
-                            
+
                         <div className="space-y-3">
 
-                            <button
-                                onClick={checkForUpdates}
-                                disabled={updateChecking}
-                                className="px-4 py-2 rounded-xl btn-cmv-outline w-full"
-                            >
-                                🔄 Procurar atualizações
-                            </button>
-
-                            {updateStatus && (
-                                <div className="mt-2 text-sm text-center" style={{ color: "#333" }}>
-                                    {updateStatus}
-                                </div>
-                            )}
-
-			                <label className="px-4 py-2 rounded-xl cursor-pointer btn-cmv-outline w-full block text-left">
+                            <label className="px-4 py-2 rounded-xl cursor-pointer btn-cmv-outline w-full block text-left">
                                 Importar CSV — Biblioteca
                                 <input
                                     type="file"
@@ -1140,6 +940,7 @@ export default function App() {
                                 className="px-4 py-2 rounded-xl btn-cmv-outline w-full">
                                 Exportar CSV — Biblioteca
                             </button>
+
 
                             <button
                                 onClick={exportLibraryJSON}
@@ -1162,8 +963,10 @@ export default function App() {
                                 onClick={openDeleteLibraryModal}
                                 className="px-4 py-2 rounded-xl btn-cmv-outline w-full"
                             >
+
                                 Eliminar canto da Biblioteca
                             </button>
+
                         </div>
 
                         <div className="flex justify-end mt-6">
@@ -1173,6 +976,7 @@ export default function App() {
                                 Fechar
                             </button>
                         </div>
+
                     </div>
                 </div>
             )}
@@ -1224,11 +1028,12 @@ export default function App() {
                                 Fechar
                             </button>
                         </div>
+
                     </div>
                 </div>
             )}
 
-            {/* Modal Ajuda */}
+            {/* Modal de Ajuda */}
             {showHelp && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
                     <div className="p-6 rounded-xl shadow-xl cmv-border"
@@ -1278,11 +1083,11 @@ export default function App() {
                                 Fechar
                             </button>
                         </div>
+
                     </div>
                 </div>
             )}
 
-            {/* Listas salvas */}
             {showSavedLists && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
                     <div className="p-6 rounded-xl shadow-xl cmv-border"
@@ -1296,7 +1101,7 @@ export default function App() {
                             <p>Nenhuma lista salva ainda.</p>
                         )}
 
-                        {savedLists.map((entry) => (
+                        {savedLists.map(entry => (
                             <div key={entry.id} className="p-3 border rounded mb-3 bg-white">
                                 <div className="font-bold">{entry.missa}</div>
                                 <div className="text-sm" style={{ color: "var(--cmv-muted)" }}>{entry.data}</div>
@@ -1333,7 +1138,6 @@ export default function App() {
                 </div>
             )}
 
-            {/* Modals auxiliares finais */}
             <ModalAddSong visible={showAddModal} onClose={() => setShowAddModal(false)} draft={newSongDraft} setDraft={setNewSongDraft} onSave={saveNewSong} />
             <ModalSelectSections visible={showSectionModal} pendingSong={pendingSong} sections={sections} pendingSelections={pendingSelections} setPendingSelections={setPendingSelections} onConfirm={confirmSectionSelection} onClose={() => setShowSectionModal(false)} />
         </>

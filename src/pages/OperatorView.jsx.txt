@@ -1,0 +1,84 @@
+import React, { useEffect, useState } from "react";
+
+export default function OperatorView() {
+  const [songs, setSongs] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [previewText, setPreviewText] = useState("");
+  const [liveText, setLiveText] = useState("");
+
+  useEffect(() => {
+    // receber lista de cantos
+    if (window.missalAPI?.onLoadSongList) {
+      const unsub = window.missalAPI.onLoadSongList((list) => {
+        setSongs(list || []);
+      });
+      return unsub;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (window.missalAPI?.onPreviewUpdate) {
+      const unsub = window.missalAPI.onPreviewUpdate((data) => {
+        setPreviewText(data?.text || "");
+      });
+      return unsub;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (window.missalAPI?.onLiveUpdate) {
+      const unsub = window.missalAPI.onLiveUpdate((data) => {
+        setLiveText(data?.text || "");
+      });
+      return unsub;
+    }
+  }, []);
+
+  const openSong = (s) => {
+    setSelected(s);
+  };
+
+  const sendPreview = () => {
+    window.missalAPI.setPreview({ text: previewText || (selected?.fullText || "") });
+  };
+
+  const sendLive = () => {
+    window.missalAPI.sendLive({ text: previewText || (selected?.fullText || "") });
+  };
+
+  return (
+    <div style={{ padding: 18, color: "#fff", background:"#111", minHeight: "100vh" }}>
+      <h2>Painel Operador (versão B)</h2>
+
+      <div style={{ display: "flex", gap: 16 }}>
+        <div style={{ width: 260, background:"#222", padding:10, borderRadius:8 }}>
+          <h3>Lista</h3>
+          <div style={{ maxHeight: "70vh", overflow: "auto" }}>
+            {songs.map((s, i) => (
+              <div key={i} style={{ padding:8, borderBottom: "1px solid #333", cursor:"pointer" }} onClick={() => openSong(s)}>
+                <div style={{ fontWeight: 700 }}>{s.numero || ""} — {s.nome || s.title}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ flex: 1, background:"#0b0b0b", padding: 12, borderRadius:8 }}>
+          <h3>Editor / Página A4 (colar texto)</h3>
+          <textarea value={previewText} onChange={(e)=>setPreviewText(e.target.value)}
+            style={{ width: "100%", height: 420, background:"#111", color:"#fff", padding:12, borderRadius:8 }} />
+          <div style={{ marginTop:10, display:"flex", gap:8 }}>
+            <button onClick={sendPreview}>Atualizar Preview</button>
+            <button onClick={sendLive}>Enviar Ao Vivo (LIVE)</button>
+          </div>
+        </div>
+
+        <div style={{ width: 320, background:"#222", padding:10, borderRadius:8 }}>
+          <h3>Visual: Próxima página</h3>
+          <div style={{ height: 260, overflow: "auto", background:"#121212", padding:8, borderRadius:6 }}>
+            <pre style={{ whiteSpace:"pre-wrap", color:"#ddd" }}>{selected?.fullText || "(texto do canto aqui)"}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -83,3 +83,36 @@
 .animate-fade {
     animation: fade 0.25s ease-out;
 }
+/*  ==========================================
+    estilos básicos para OperatorView 
+    ========================================== */
+.mp-page {
+    margin: 0 auto;
+    background: #fff;
+    color: #111;
+    border: 1px solid rgba(0,0,0,0.06);
+}
+
+/* ============================================
+    botão simples (estilize conforme seu tema)
+   ============================================ */
+button {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: none;
+    background: #2b6cb0;
+    color: white;
+    cursor: pointer;
+}
+
+    button:hover {
+        opacity: 0.95;
+    }
+
+/* ==========================================
+    textarea
+    ========================================= */
+textarea {
+    font-family: inherit;
+    font-size: 14px;
+}
