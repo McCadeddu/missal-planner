@@ -1,0 +1,89 @@
+############################################################
+# NORMALIZAÇÃO DE FIM DE LINHA
+############################################################
+
+# Todos os arquivos de texto devem usar LF internamente no Git.
+# No Windows, o Git converte automaticamente para CRLF no checkout.
+* text=auto eol=lf
+
+# Arquivos específicos que DEVEM continuar CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+############################################################
+# ARQUIVOS QUE DEVEM FICAR COMO BINÁRIOS (sem conversão)
+############################################################
+
+# Binários, executáveis, builds
+*.exe binary
+*.msi binary
+*.dll binary
+*.deb binary
+*.rpm binary
+*.AppImage binary
+*.snap binary
+*.dmg binary
+
+# Imagens
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.svg binary
+
+# Documentos
+*.pdf binary
+*.docx binary
+*.xlsx binary
+*.pptx binary
+
+############################################################
+# SCRIPTS E CÓDIGO — merge-friendly
+############################################################
+
+# JS / JSX / TS / TSX → suporte a merges melhores
+*.js    text diff=javascript
+*.jsx   text diff=javascript
+*.ts    text diff=javascript
+*.tsx   text diff=javascript
+
+# Markdown
+*.md text
+
+# JSON
+*.json text
+
+# HTML / CSS
+*.html text
+*.css text
+
+# Configs
+*.yml text
+*.yaml text
+*.toml text
+*.ini text
+
+############################################################
+# ARQUIVOS DE FONTE / FONTS
+############################################################
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+
+############################################################
+# DESABILITAR NORMALIZAÇÃO PARA PASTAS DE BUILD
+############################################################
+/dist/** binary
+/build/** binary
+/release/** binary
+/out/** binary
+
+############################################################
+# EVITAR conflitos do Git nos arquivos lock
+############################################################
+package-lock.json -merge
+pnpm-lock.yaml -merge
+yarn.lock -merge
