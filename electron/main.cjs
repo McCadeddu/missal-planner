@@ -259,7 +259,6 @@ app.whenReady().then(() => {
     createMainWindow();
     createMenu();
 
-    autoUpdater.checkForUpdates().catch(() => { });
     autoUpdater.checkForUpdatesAndNotify().catch(() => { });
 
     app.on("activate", () => {
@@ -303,10 +302,11 @@ autoUpdater.on("download-progress", (p) => {
 });
 
 autoUpdater.on("update-downloaded", (info) => {
-    log.info("AutoUpdater: atualização baixada. Instalando…");
+    log.info("AutoUpdater: atualização baixada.");
 
-    // Instala e fecha o app automaticamente
-    autoUpdater.quitAndInstall();
+    if (operatorWin) {
+        operatorWin.webContents.send("update-downloaded", info);
+    }
 });
 
 /* ============================================================
