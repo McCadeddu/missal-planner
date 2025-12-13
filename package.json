@@ -100,7 +100,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "MissalPlanner",
-      "deleteAppDataOnUninstall": false
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "MissalPlanner-Setup-${version}.${ext}"
     },
 
     "mac": {
