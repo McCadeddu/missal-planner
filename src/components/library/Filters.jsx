@@ -38,12 +38,12 @@ export default function Filters({
                   <input
                       ref={searchInputRef}
                       type="text"
-                      placeholder="🔍 Pesquisar (nome, número, letra...)"
+                      placeholder="Pesquisar (nome, número, letra...)"
                       value={globalSearch}
                       onChange={(e) => setGlobalSearch(e.target.value)}
                       className="w-full p-4 text-lg rounded-xl shadow-md focus:outline-none focus:ring-4"
                       style={{
-                          border: "2px solid var(--cmv-primary)",
+                          border: "1px solid var(--cmv-primary)",
                           backgroundColor: "#fff",
                           color: "#222",
                           fontWeight: "600",

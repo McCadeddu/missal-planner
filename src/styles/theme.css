@@ -113,3 +113,12 @@
 .animate-fade {
     animation: fade 0.25s ease-out;
 }
+.ProseMirror {
+    white-space: pre-wrap;
+    outline: none;
+    min-height: 100%;
+}
+
+    .ProseMirror p {
+        margin: 0.4em 0;
+    }

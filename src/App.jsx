@@ -43,6 +43,7 @@ const missaSections = [
     "Cordeiro de Deus cantado",
     "Canto de Comunhão",
     "Canto de Ação de Graças",
+    "Canto de eventos particulares",
     "Canto final",
 ];
 
@@ -118,6 +119,8 @@ export default function App() {
     const [massName, setMassName] = useState("");
     const [massDate, setMassDate] = useState(() => new Date().toISOString().slice(0, 10));
 
+    const [libraryLoaded, setLibraryLoaded] = useState(false);
+
     // Biblioteca: filtros / busca / ordenação
     const [globalSearch, setGlobalSearch] = useState("");
     const [filterCategory, setFilterCategory] = useState("Todas");
@@ -160,23 +163,25 @@ export default function App() {
         try {
             const parsed = Papa.parse(cantosCSV, { header: true, skipEmptyLines: true });
             const arr = parsed.data
-                .map((r, idx) => {
-                    const nome = (r["NOME DO CANTO"] ?? r["NOME"] ?? "").toString().trim();
-                    const numero = (r["NÚMERO"] ?? r["NUMERO"] ?? "").toString().trim();
-                    const category = (r["CATEGORIA"] ?? "Geral").toString().trim();
-                    const composer = (r["COMPOSER"] ?? "").toString().trim();
-                    // Garantir campo fullText desde o início
-                    return { id: idx + 1, numero, nome, composer, category, fullText: "" };
-                })
-                .filter((s) => s.nome);
+                .map((r, idx) => ({
+                    id: idx + 1,
+                    numero: (r["NÚMERO"] ?? "").toString().trim(),
+                    nome: (r["NOME DO CANTO"] ?? "").toString().trim(),
+                    composer: "",
+                    category: (r["CATEGORIA"] ?? "Geral").toString().trim(),
+
+                    // 🔒 campos corretos
+                    fullTextProjection: "",
+                    fullTextMusic: "",
+                    tonality: ""
+                }))
+                .filter(s => s.nome);
 
             const savedLibraryRaw = localStorage.getItem(AUTOSAVE_LIBRARY);
 
             if (!savedLibraryRaw) {
                 setSongsData(arr);
-                console.log("Biblioteca inicial carregada do CSV");
-            } else {
-                console.log("CSV ignorado — biblioteca personalizada carregada do autosave");
+                setLibraryLoaded(true);
             }
         } catch (e) {
             console.error(e);
@@ -187,48 +192,16 @@ export default function App() {
     useEffect(() => {
         try {
             const savedLibraryRaw = localStorage.getItem(AUTOSAVE_LIBRARY);
-            let savedLibrary = null;
 
             if (savedLibraryRaw) {
-                try {
-                    savedLibrary = JSON.parse(savedLibraryRaw);
-                } catch (e) {
-                    console.warn("Erro ao ler autosave JSON da biblioteca:", e);
+                const parsed = JSON.parse(savedLibraryRaw);
+                if (Array.isArray(parsed)) {
+                    setSongsData(parsed);
+                    setLibraryLoaded(true);
                 }
-            }
-
-            if (savedLibrary && Array.isArray(savedLibrary) && savedLibrary.length > 0) {
-                // normalizar fullText
-                setSongsData(savedLibrary.map((s) => ({ ...s, fullText: s.fullText || "" })));
-            }
-
-            const savedSelected = localStorage.getItem(AUTOSAVE_SELECTED);
-            if (savedSelected) {
-                try {
-                    const parsedSelected = JSON.parse(savedSelected);
-                    const normalized = {};
-                    for (const sec of Object.keys(parsedSelected)) {
-                        normalized[sec] = parsedSelected[sec].map((it) => ({ ...it, fullText: it.fullText || "" }));
-                    }
-                    setSelectedSongs(normalized);
-                } catch (e) {
-                    setSelectedSongs(JSON.parse(savedSelected));
-                }
-            }
-
-            const savedMassName = localStorage.getItem(AUTOSAVE_MASSNAME);
-            if (savedMassName) setMassName(savedMassName);
-
-            const savedMassDate = localStorage.getItem(AUTOSAVE_MASSDATE);
-            if (savedMassDate) setMassDate(savedMassDate);
-
-            const savedMode = localStorage.getItem(AUTOSAVE_MODE);
-            if (savedMode && modes[savedMode]) {
-                setMode(savedMode);
-                setSections(modes[savedMode].sections);
             }
         } catch (e) {
-            console.warn("Erro ao carregar autosave:", e);
+            console.warn(e);
         }
     }, []);
 
@@ -236,13 +209,19 @@ export default function App() {
        Autosave reativo
        =========================== */
 
+
     useEffect(() => {
+        if (!libraryLoaded) return;
+
         try {
-            localStorage.setItem(AUTOSAVE_LIBRARY, JSON.stringify(songsData));
+            localStorage.setItem(
+                AUTOSAVE_LIBRARY,
+                JSON.stringify(songsData)
+            );
         } catch (e) {
             console.warn("Erro ao salvar biblioteca:", e);
         }
-    }, [songsData]);
+    }, [songsData, libraryLoaded]);
 
     useEffect(() => {
         try {
@@ -369,53 +348,9 @@ export default function App() {
         });
     }, [selectedSongs, sections]);
 
-    /* ===========================
-       IPC: receber atualizações de texto vindas do Operator
-       (this is the single listener — evitar duplicações)
-       =========================== */
-
     useEffect(() => {
-        // Proteção: se a API não existir (modo browser) ignora
-        if (!window.missalAPI?.onSongTextUpdated) return;
-
-        const unsubscribe = window.missalAPI.onSongTextUpdated((payload) => {
-            // payload esperado: { id, fullText }
-            if (!payload || !payload.id) return;
-
-            const { id, fullText } = payload;
-
-            // 1) Atualiza biblioteca (songsData)
-            setSongsData((prev) => {
-                const updated = prev.map((s) =>
-                    s.id === id ? { ...s, fullText } : s
-                );
-                try {
-                    localStorage.setItem(AUTOSAVE_LIBRARY, JSON.stringify(updated));
-                    // marcardor para fallback em outros contexts
-                    localStorage.setItem("mp_library_last_update", Date.now().toString());
-                } catch (e) { }
-                return updated;
-            });
-
-            // 2) Atualiza seleção atual (selectedSongs)
-            setSelectedSongs((prev) => {
-                // clonagem superficial por segurança
-                const out = { ...prev };
-                for (const sec of Object.keys(out)) {
-                    out[sec] = out[sec].map((item) =>
-                        item.id === id ? { ...item, fullText } : item
-                    );
-                }
-                try {
-                    localStorage.setItem(AUTOSAVE_SELECTED, JSON.stringify(out));
-                } catch (e) { }
-                return out;
-            });
-        });
-
-        return unsubscribe;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        setSections(modes[mode].sections);
+    }, [mode]);
 
     /* ===========================
        Fallback: detectar atualizações de biblioteca via localStorage
@@ -956,402 +891,400 @@ export default function App() {
     };
 
     const checkForUpdates = async () => {
-    if (!window.missalAPI?.checkForUpdates) {
-        alert("Atualizações automáticas estão disponíveis somente na versão Electron.");
-        return;
-    }
-
-    setUpdateChecking(true);
-    setUpdateStatus("Verificando atualizações…");
-
-    try {
-        const resp = await window.missalAPI.checkForUpdates();
-
-        setUpdateChecking(false);
-
-        if (resp.error) {
-            setUpdateStatus("Erro ao buscar atualização.");
+        if (!window.missalAPI?.checkForUpdates) {
+            alert("Atualizações automáticas estão disponíveis somente na versão Electron.");
             return;
         }
 
-        if (resp.found) {
-            setUpdateStatus(`Nova versão disponível: v${resp.version}. Download iniciará automaticamente.`);
-        } else {
-            setUpdateStatus("Você já está usando a versão mais recente.");
+        setUpdateChecking(true);
+        setUpdateStatus("Verificando atualizações…");
+
+        try {
+            const resp = await window.missalAPI.checkForUpdates();
+
+            setUpdateChecking(false);
+
+            if (resp.error) {
+                setUpdateStatus("Erro ao buscar atualização.");
+                return;
+            }
+
+            if (resp.found) {
+                setUpdateStatus(`Nova versão disponível: v${resp.version}. Download iniciará automaticamente.`);
+            } else {
+                setUpdateStatus("Você já está usando a versão mais recente.");
+            }
+
+        } catch (err) {
+            setUpdateChecking(false);
+            setUpdateStatus("Erro inesperado.");
         }
+    };
+        /* ===========================
+           UI: renderização principal
+           =========================== */
 
-    } catch (err) {
-        setUpdateChecking(false);
-        setUpdateStatus("Erro inesperado.");
-    }
-};
+        return (
+            <>
+                <Header />
 
-
-    /* ===========================
-       UI: renderização principal
-       =========================== */
-
-    return (
-        <>
-            <Header />
-
-            <div
-                className="max-w-6xl mx-auto mt-4 mb-6 p-4 rounded-xl"
-                style={{ backgroundColor: "#0d6efd" }}
-            >
-                <button
-                    onClick={() => setShowHelp(true)}
-                    className="px-4 py-2 rounded-xl btn-cmv-outline"
-                    style={{ backgroundColor: "white", color: "#0044aa", fontWeight: "600" }}
+                <div
+                    className="max-w-6xl mx-auto mt-4 mb-6 p-4 rounded-xl"
+                    style={{ backgroundColor: "#0d6efd" }}
                 >
-                    📘 Como usar o Missal-Planner
-                </button>
-            </div>
+                    <button
+                        onClick={() => setShowHelp(true)}
+                        className="px-4 py-2 rounded-xl btn-cmv-outline"
+                        style={{ backgroundColor: "white", color: "#0044aa", fontWeight: "600" }}
+                    >
+                        📘 Como usar o Missal-Planner
+                    </button>
+                </div>
 
-            <div className="min-h-screen p-6" style={{ background: "var(--cmv-bg, #f1e5ae)", color: "var(--cmv-text, #222)", fontFamily: "var(--font-sans, system-ui)" }}>
-                <div className="max-w-6xl mx-auto mb-6">
-                    <input type="text" placeholder="Nome da Missa" value={massName} onChange={(e) => setMassName(e.target.value)}
-                        className="w-full p-2 text-1xl font-bold rounded-xl shadow-sm"
-                        style={{ background: "white", color: "var(--cmv-text)", fontFamily: "var(--font-heading)", borderBottom: "4px solid #c77e4a" }} />
+                <div className="min-h-screen p-6" style={{ background: "var(--cmv-bg, #f1e5ae)", color: "var(--cmv-text, #222)", fontFamily: "var(--font-sans, system-ui)" }}>
+                    <div className="max-w-6xl mx-auto mb-6">
+                        <input type="text" placeholder="Nome da Missa" value={massName} onChange={(e) => setMassName(e.target.value)}
+                            className="w-full p-2 text-1xl font-bold rounded-xl shadow-sm"
+                            style={{ background: "white", color: "var(--cmv-text)", fontFamily: "var(--font-heading)", borderBottom: "4px solid #c77e4a" }} />
 
-                    <div className="mt-3">
-                        <label className="text-sm mb-1 block" style={{ color: "var(--cmv-muted)" }}>Inserir Data</label>
-                        <input type="date" value={massDate} onChange={(e) => setMassDate(e.target.value)} className="p-2 rounded" style={{ background: "white", border: "1px solid var(--cmv-primary)", color: "var(--cmv-text)" }} />
+                        <div className="mt-3">
+                            <label className="text-sm mb-1 block" style={{ color: "var(--cmv-muted)" }}>Inserir Data</label>
+                            <input type="date" value={massDate} onChange={(e) => setMassDate(e.target.value)} className="p-2 rounded" style={{ background: "white", border: "1px solid var(--cmv-primary)", color: "var(--cmv-text)" }} />
+                        </div>
+                    </div>
+
+                    <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="col-span-2">
+                            <div className="p-4 rounded-xl shadow-md cmv-border" style={{ background: "white" }}>
+                                <div className="w-full flex flex-wrap items-center gap-4 mb-6">
+                                    <button
+                                        onClick={() => {
+                                            setSavedLists(getSavedLists());
+                                            setShowSavedLists(true);
+                                        }}
+                                        className="px-5 py-2 rounded-xl font-semibold btn-cmv-outline"
+                                    >
+                                        📂 Abrir Lista de Cantos
+                                    </button>
+
+                                    <label className="px-5 py-2 rounded-xl cursor-pointer font-semibold btn-cmv-outline">
+                                        Importar lista .json
+                                        <input
+                                            type="file"
+                                            accept=".json"
+                                            onChange={(e) => importJSON(e.target.files[0])}
+                                            className="hidden"
+                                        />
+                                    </label>
+
+                                    <button
+                                        onClick={() => setShowSettings(true)}
+                                        className="px-5 py-2 rounded-xl font-semibold btn-cmv-outline"
+                                    >
+                                        ⚙️ Configurações
+                                    </button>
+                                </div>
+
+                                <Filters globalSearch={globalSearch} setGlobalSearch={setGlobalSearch}
+                                    filterCategory={filterCategory} setFilterCategory={setFilterCategory}
+                                    filterComposer={filterComposer} setFilterComposer={setFilterComposer}
+                                    sortMode={sortMode} setSortMode={setSortMode}
+                                    categoriesList={categoriesList} searchInputRef={searchInputRef} />
+
+                                <div className="mt-4">
+                                    <LibraryPanel songs={filteredSongs} onAdd={handleLibraryAdd} onEdit={handleLibraryEdit} />
+                                </div>
+
+                                <div className="relative inline-block">
+                                    <button
+                                        onClick={() => setShowAddModal(true)}
+                                        className="px-5 py-2 rounded-xl font-semibold btn-cmv-outline"
+                                    >
+                                        Novo Canto
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="mt-6">
+                                <SelectedSongsPanel selectedSongs={selectedSongs} sections={sections} onRemove={({ section, indexInSection }) => removeFromSection(section, indexInSection ?? null)} onEdit={({ section, indexInSection }) => openEditSelectedItem(section, indexInSection)} />
+                            </div>
+
+                            <div className="mt-6 flex flex-wrap gap-3">
+                                <button onClick={saveCurrentList} className="px-3 py-2 rounded btn-cmv-outline">
+                                    💾 Salvar Lista
+                                </button>
+
+                                <button onClick={exportJSON} className="px-3 py-2 rounded btn-cmv-outline">Export .json</button>
+
+                                <button onClick={generatePDF} className="px-3 py-2 rounded btn-cmv-outline">Gerar PDF</button>
+
+                                <button onClick={generateTeamPDF} className="px-3 py-2 rounded btn-cmv-outline">PDF Equipe</button>
+
+                                <button
+                                    onClick={() => {
+                                        const flat = flattenSelected(selectedSongs, sections);
+
+                                        if (!window.missalAPI?.openOperatorAndProjection) {
+                                            alert(
+                                                "A projeção funciona somente na versão Electron.\n" +
+                                                "Instale o aplicativo para usar o Painel Operador e a Projeção."
+                                            );
+                                            return;
+                                        }
+
+                                        window.missalAPI.openOperatorAndProjection(flat);
+                                    }}
+                                    className="px-3 py-2 rounded btn-cmv-outline"
+                                >
+                                    🎥 Abrir Projeção
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="col-span-1">
+                            <SidebarPanel mode={mode} setMode={setMode} modes={modes} sections={sections} categoriesList={categoriesList} setFilterCategory={setFilterCategory} setSelectedSongs={setSelectedSongs} />
+                        </div>
                     </div>
                 </div>
 
-                <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="col-span-2">
-                        <div className="p-4 rounded-xl shadow-md cmv-border" style={{ background: "white" }}>
-                            <div className="w-full flex flex-wrap items-center gap-4 mb-6">
+                {/* Modal Configurações */}
+                {showSettings && (
+                    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                        <div className="p-6 rounded-xl shadow-xl cmv-border"
+                            style={{ background: "white", width: "420px" }}>
+
+                            <h2 className="h-liturgico mb-4" style={{ fontSize: "1.6rem" }}>
+                                ⚙️ Configurações
+                            </h2>
+
+                            <div className="space-y-3">
+
                                 <button
-                                    onClick={() => {
-                                        setSavedLists(getSavedLists());
-                                        setShowSavedLists(true);
-                                    }}
-                                    className="px-5 py-2 rounded-xl font-semibold btn-cmv-outline"
+                                    onClick={checkForUpdates}
+                                    disabled={updateChecking}
+                                    className="px-4 py-2 rounded-xl btn-cmv-outline w-full"
                                 >
-                                    📂 Abrir Lista de Cantos
+                                    🔄 Procurar atualizações
                                 </button>
 
-                                <label className="px-5 py-2 rounded-xl cursor-pointer font-semibold btn-cmv-outline">
-                                    Importar lista .json
+                                {updateStatus && (
+                                    <div className="mt-2 text-sm text-center" style={{ color: "#333" }}>
+                                        {updateStatus}
+                                    </div>
+                                )}
+
+                                <label className="px-4 py-2 rounded-xl cursor-pointer btn-cmv-outline w-full block text-left">
+                                    Importar CSV — Biblioteca
                                     <input
                                         type="file"
-                                        accept=".json"
-                                        onChange={(e) => importJSON(e.target.files[0])}
+                                        accept=".csv"
+                                        ref={fileInputLibraryRef}
+                                        onChange={(e) => importLibraryCSV(e.target.files[0])}
                                         className="hidden"
                                     />
                                 </label>
 
                                 <button
-                                    onClick={() => setShowSettings(true)}
-                                    className="px-5 py-2 rounded-xl font-semibold btn-cmv-outline"
-                                >
-                                    ⚙️ Configurações
+                                    onClick={exportLibraryAsCSV}
+                                    className="px-4 py-2 rounded-xl btn-cmv-outline w-full">
+                                    Exportar CSV — Biblioteca
                                 </button>
-                            </div>
 
-                            <Filters globalSearch={globalSearch} setGlobalSearch={setGlobalSearch}
-                                filterCategory={filterCategory} setFilterCategory={setFilterCategory}
-                                filterComposer={filterComposer} setFilterComposer={setFilterComposer}
-                                sortMode={sortMode} setSortMode={setSortMode}
-                                categoriesList={categoriesList} searchInputRef={searchInputRef} />
-
-                            <div className="mt-4">
-                                <LibraryPanel songs={filteredSongs} onAdd={handleLibraryAdd} onEdit={handleLibraryEdit} />
-                            </div>
-
-                            <div className="relative inline-block">
                                 <button
-                                    onClick={() => setShowAddModal(true)}
-                                    className="px-5 py-2 rounded-xl font-semibold btn-cmv-outline"
+                                    onClick={exportLibraryJSON}
+                                    className="px-4 py-2 rounded-xl btn-cmv-outline w-full"
                                 >
-                                    Novo Canto
+                                    Exportar Biblioteca — JSON
+                                </button>
+
+                                <label className="px-4 py-2 rounded-xl cursor-pointer btn-cmv-outline w-full block text-left">
+                                    Importar Biblioteca — JSON
+                                    <input
+                                        type="file"
+                                        accept=".json"
+                                        onChange={(e) => importLibraryJSON(e.target.files[0])}
+                                        className="hidden"
+                                    />
+                                </label>
+
+                                <button
+                                    onClick={openDeleteLibraryModal}
+                                    className="px-4 py-2 rounded-xl btn-cmv-outline w-full"
+                                >
+                                    Eliminar canto da Biblioteca
+                                </button>
+                            </div>
+
+                            <div className="flex justify-end mt-6">
+                                <button
+                                    onClick={() => setShowSettings(false)}
+                                    className="px-4 py-2 rounded-xl btn-cmv-outline">
+                                    Fechar
                                 </button>
                             </div>
                         </div>
-
-                        <div className="mt-6">
-                            <SelectedSongsPanel selectedSongs={selectedSongs} sections={sections} onRemove={({ section, indexInSection }) => removeFromSection(section, indexInSection ?? null)} onEdit={({ section, indexInSection }) => openEditSelectedItem(section, indexInSection)} />
-                        </div>
-
-                        <div className="mt-6 flex flex-wrap gap-3">
-                            <button onClick={saveCurrentList} className="px-3 py-2 rounded btn-cmv-outline">
-                                💾 Salvar Lista
-                            </button>
-
-                            <button onClick={exportJSON} className="px-3 py-2 rounded btn-cmv-outline">Export .json</button>
-
-                            <button onClick={generatePDF} className="px-3 py-2 rounded btn-cmv-outline">Gerar PDF</button>
-
-                            <button onClick={generateTeamPDF} className="px-3 py-2 rounded btn-cmv-outline">PDF Equipe</button>
-
-                            <button
-                                onClick={() => {
-                                    const flat = flattenSelected(selectedSongs, sections);
-
-                                    if (!window.missalAPI?.openOperatorAndProjection) {
-                                        alert(
-                                            "A projeção funciona somente na versão Electron.\n" +
-                                            "Instale o aplicativo para usar o Painel Operador e a Projeção."
-                                        );
-                                        return;
-                                    }
-
-                                    window.missalAPI.openOperatorAndProjection(flat);
-                                }}
-                                className="px-3 py-2 rounded btn-cmv-outline"
-                            >
-                                🎥 Abrir Projeção
-                            </button>
-                        </div>
                     </div>
+                )}
 
-                    <div className="col-span-1">
-                        <SidebarPanel mode={mode} setMode={setMode} modes={modes} sections={sections} categoriesList={categoriesList} setFilterCategory={setFilterCategory} setSelectedSongs={setSelectedSongs} />
-                    </div>
-                </div>
-            </div>
+                {/* Modal Eliminar canto da Biblioteca */}
+                {showDeleteLibraryModal && (
+                    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                        <div className="p-6 rounded-xl shadow-xl cmv-border"
+                            style={{ background: "white", width: "760px", maxHeight: "80vh", overflowY: "auto" }}>
 
-            {/* Modal Configurações */}
-            {showSettings && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-                    <div className="p-6 rounded-xl shadow-xl cmv-border"
-                        style={{ background: "white", width: "420px" }}>
-
-                        <h2 className="h-liturgico mb-4" style={{ fontSize: "1.6rem" }}>
-                            ⚙️ Configurações
-                        </h2>
-                            
-                        <div className="space-y-3">
-
-                            <button
-                                onClick={checkForUpdates}
-                                disabled={updateChecking}
-                                className="px-4 py-2 rounded-xl btn-cmv-outline w-full"
-                            >
-                                🔄 Procurar atualizações
-                            </button>
-
-                            {updateStatus && (
-                                <div className="mt-2 text-sm text-center" style={{ color: "#333" }}>
-                                    {updateStatus}
-                                </div>
-                            )}
-
-			                <label className="px-4 py-2 rounded-xl cursor-pointer btn-cmv-outline w-full block text-left">
-                                Importar CSV — Biblioteca
-                                <input
-                                    type="file"
-                                    accept=".csv"
-                                    ref={fileInputLibraryRef}
-                                    onChange={(e) => importLibraryCSV(e.target.files[0])}
-                                    className="hidden"
-                                />
-                            </label>
-
-                            <button
-                                onClick={exportLibraryAsCSV}
-                                className="px-4 py-2 rounded-xl btn-cmv-outline w-full">
-                                Exportar CSV — Biblioteca
-                            </button>
-
-                            <button
-                                onClick={exportLibraryJSON}
-                                className="px-4 py-2 rounded-xl btn-cmv-outline w-full"
-                            >
-                                Exportar Biblioteca — JSON
-                            </button>
-
-                            <label className="px-4 py-2 rounded-xl cursor-pointer btn-cmv-outline w-full block text-left">
-                                Importar Biblioteca — JSON
-                                <input
-                                    type="file"
-                                    accept=".json"
-                                    onChange={(e) => importLibraryJSON(e.target.files[0])}
-                                    className="hidden"
-                                />
-                            </label>
-
-                            <button
-                                onClick={openDeleteLibraryModal}
-                                className="px-4 py-2 rounded-xl btn-cmv-outline w-full"
-                            >
+                            <h2 className="h-liturgico mb-4" style={{ fontSize: "1.6rem" }}>
                                 Eliminar canto da Biblioteca
-                            </button>
-                        </div>
+                            </h2>
 
-                        <div className="flex justify-end mt-6">
-                            <button
-                                onClick={() => setShowSettings(false)}
-                                className="px-4 py-2 rounded-xl btn-cmv-outline">
-                                Fechar
-                            </button>
+                            <div className="grid grid-cols-3 gap-4">
+                                {songsData.length === 0 && (
+                                    <p>Nenhum canto na biblioteca.</p>
+                                )}
+
+                                {songsData.map((s) => (
+                                    <div key={s.id} className="p-4 border rounded-md bg-white">
+                                        <div className="font-bold" style={{ color: "var(--cmv-text)" }}>
+                                            {s.nome || s.title}
+                                        </div>
+
+                                        <div style={{ color: "var(--cmv-muted)", marginBottom: "0.5rem" }}>
+                                            {s.numero ? `#${s.numero}` : ""} {s.compositor ? ` — ${s.compositor}` : ""}
+                                        </div>
+
+                                        <button
+                                            className="px-3 py-1 rounded bg-red-600 text-white"
+                                            onClick={() => {
+                                                if (window.confirm(`Eliminar o canto "${s.nome || s.title}"?`)) {
+                                                    deleteSongFromLibrary(s.id);
+                                                }
+                                            }}
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="flex justify-end mt-6">
+                                <button
+                                    onClick={() => setShowDeleteLibraryModal(false)}
+                                    className="px-4 py-2 rounded-xl btn-cmv-outline"
+                                >
+                                    Fechar
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Modal Eliminar canto da Biblioteca */}
-            {showDeleteLibraryModal && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-                    <div className="p-6 rounded-xl shadow-xl cmv-border"
-                        style={{ background: "white", width: "760px", maxHeight: "80vh", overflowY: "auto" }}>
+                {/* Modal Ajuda */}
+                {showHelp && (
+                    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                        <div className="p-6 rounded-xl shadow-xl cmv-border"
+                            style={{ background: "white", width: "620px", maxHeight: "80vh", overflowY: "auto" }}>
 
-                        <h2 className="h-liturgico mb-4" style={{ fontSize: "1.6rem" }}>
-                            Eliminar canto da Biblioteca
-                        </h2>
+                            <h2 className="h-liturgico mb-4" style={{ fontSize: "1.6rem" }}>
+                                📘 Como usar o Missal-Planner
+                            </h2>
 
-                        <div className="grid grid-cols-3 gap-4">
-                            {songsData.length === 0 && (
-                                <p>Nenhum canto na biblioteca.</p>
+                            <p style={{ marginBottom: "1rem", color: "var(--cmv-text)" }}>
+                                O Missal-Planner nasceu do desejo de ajudar as equipes de canto
+                                da Comunidade Missionária de Villaregia a organizar todos os
+                                momentos de oração cantada das Missas e das Adorações.
+                            </p>
+
+                            <p className="mb-2">
+                                Ele foi pensado para oferecer:
+                            </p>
+
+                            <ul className="list-disc ml-5 space-y-1" style={{ color: "var(--cmv-text)" }}>
+                                <li>Uma biblioteca de cantos sempre atualizada</li>
+                                <li>Escolha rápida dos cantos por momentos litúrgicos</li>
+                                <li>Planejamento de Missa e Adoração com clareza</li>
+                                <li>Geração automática de PDFs para a equipe</li>
+                                <li>Exportação e importação em CSV ou JSON</li>
+                                <li>Autosave automático: o app nunca perde seu trabalho</li>
+                            </ul>
+
+                            <h3 className="mt-4 font-semibold" style={{ color: "var(--cmv-text)" }}>
+                                Como funciona:
+                            </h3>
+
+                            <ol className="list-decimal ml-5 space-y-1" style={{ color: "var(--cmv-text)" }}>
+                                <li>Escolha o modo (Missa / Adoração).</li>
+                                <li>Filtre, procure e selecione cantos na biblioteca.</li>
+                                <li>Adicione cantos aos momentos litúrgicos desejados.</li>
+                                <li>Edite ou remova cantos conforme necessário.</li>
+                                <li>Gere PDFs para impressão.</li>
+                                <li>Use a seção Configurações para importar/exportar bibliotecas personalizadas.</li>
+                            </ol>
+
+                            <div className="flex justify-end mt-6">
+                                <button
+                                    onClick={() => setShowHelp(false)}
+                                    className="px-4 py-2 rounded-xl btn-cmv-outline"
+                                >
+                                    Fechar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Listas salvas */}
+                {showSavedLists && (
+                    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                        <div className="p-6 rounded-xl shadow-xl cmv-border"
+                            style={{ background: "white", width: "520px", maxHeight: "80vh", overflowY: "auto" }}>
+
+                            <h2 className="h-liturgico mb-4" style={{ fontSize: "1.6rem" }}>
+                                📂 Listas Salvas
+                            </h2>
+
+                            {savedLists.length === 0 && (
+                                <p>Nenhuma lista salva ainda.</p>
                             )}
 
-                            {songsData.map((s) => (
-                                <div key={s.id} className="p-4 border rounded-md bg-white">
-                                    <div className="font-bold" style={{ color: "var(--cmv-text)" }}>
-                                        {s.nome || s.title}
-                                    </div>
+                            {savedLists.map((entry) => (
+                                <div key={entry.id} className="p-3 border rounded mb-3 bg-white">
+                                    <div className="font-bold">{entry.missa}</div>
+                                    <div className="text-sm" style={{ color: "var(--cmv-muted)" }}>{entry.data}</div>
 
-                                    <div style={{ color: "var(--cmv-muted)", marginBottom: "0.5rem" }}>
-                                        {s.numero ? `#${s.numero}` : ""} {s.compositor ? ` — ${s.compositor}` : ""}
-                                    </div>
+                                    <div className="mt-2">
+                                        <button
+                                            className="px-3 py-1 mr-2 rounded btn-cmv-outline"
+                                            onClick={() => openSavedList(entry)}
+                                        >
+                                            Abrir
+                                        </button>
 
-                                    <button
-                                        className="px-3 py-1 rounded bg-red-600 text-white"
-                                        onClick={() => {
-                                            if (window.confirm(`Eliminar o canto "${s.nome || s.title}"?`)) {
-                                                deleteSongFromLibrary(s.id);
-                                            }
-                                        }}
-                                    >
-                                        Eliminar
-                                    </button>
+                                        <button
+                                            className="px-3 py-1 rounded bg-red-600 text-white"
+                                            onClick={() => {
+                                                if (window.confirm("Eliminar esta lista?")) deleteSavedList(entry.id);
+                                            }}
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
-                        </div>
 
-                        <div className="flex justify-end mt-6">
-                            <button
-                                onClick={() => setShowDeleteLibraryModal(false)}
-                                className="px-4 py-2 rounded-xl btn-cmv-outline"
-                            >
-                                Fechar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal Ajuda */}
-            {showHelp && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-                    <div className="p-6 rounded-xl shadow-xl cmv-border"
-                        style={{ background: "white", width: "620px", maxHeight: "80vh", overflowY: "auto" }}>
-
-                        <h2 className="h-liturgico mb-4" style={{ fontSize: "1.6rem" }}>
-                            📘 Como usar o Missal-Planner
-                        </h2>
-
-                        <p style={{ marginBottom: "1rem", color: "var(--cmv-text)" }}>
-                            O Missal-Planner nasceu do desejo de ajudar as equipes de canto
-                            da Comunidade Missionária de Villaregia a organizar todos os
-                            momentos de oração cantada das Missas e das Adorações.
-                        </p>
-
-                        <p className="mb-2">
-                            Ele foi pensado para oferecer:
-                        </p>
-
-                        <ul className="list-disc ml-5 space-y-1" style={{ color: "var(--cmv-text)" }}>
-                            <li>Uma biblioteca de cantos sempre atualizada</li>
-                            <li>Escolha rápida dos cantos por momentos litúrgicos</li>
-                            <li>Planejamento de Missa e Adoração com clareza</li>
-                            <li>Geração automática de PDFs para a equipe</li>
-                            <li>Exportação e importação em CSV ou JSON</li>
-                            <li>Autosave automático: o app nunca perde seu trabalho</li>
-                        </ul>
-
-                        <h3 className="mt-4 font-semibold" style={{ color: "var(--cmv-text)" }}>
-                            Como funciona:
-                        </h3>
-
-                        <ol className="list-decimal ml-5 space-y-1" style={{ color: "var(--cmv-text)" }}>
-                            <li>Escolha o modo (Missa / Adoração).</li>
-                            <li>Filtre, procure e selecione cantos na biblioteca.</li>
-                            <li>Adicione cantos aos momentos litúrgicos desejados.</li>
-                            <li>Edite ou remova cantos conforme necessário.</li>
-                            <li>Gere PDFs para impressão.</li>
-                            <li>Use a seção Configurações para importar/exportar bibliotecas personalizadas.</li>
-                        </ol>
-
-                        <div className="flex justify-end mt-6">
-                            <button
-                                onClick={() => setShowHelp(false)}
-                                className="px-4 py-2 rounded-xl btn-cmv-outline"
-                            >
-                                Fechar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Listas salvas */}
-            {showSavedLists && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-                    <div className="p-6 rounded-xl shadow-xl cmv-border"
-                        style={{ background: "white", width: "520px", maxHeight: "80vh", overflowY: "auto" }}>
-
-                        <h2 className="h-liturgico mb-4" style={{ fontSize: "1.6rem" }}>
-                            📂 Listas Salvas
-                        </h2>
-
-                        {savedLists.length === 0 && (
-                            <p>Nenhuma lista salva ainda.</p>
-                        )}
-
-                        {savedLists.map((entry) => (
-                            <div key={entry.id} className="p-3 border rounded mb-3 bg-white">
-                                <div className="font-bold">{entry.missa}</div>
-                                <div className="text-sm" style={{ color: "var(--cmv-muted)" }}>{entry.data}</div>
-
-                                <div className="mt-2">
-                                    <button
-                                        className="px-3 py-1 mr-2 rounded btn-cmv-outline"
-                                        onClick={() => openSavedList(entry)}
-                                    >
-                                        Abrir
-                                    </button>
-
-                                    <button
-                                        className="px-3 py-1 rounded bg-red-600 text-white"
-                                        onClick={() => {
-                                            if (window.confirm("Eliminar esta lista?")) deleteSavedList(entry.id);
-                                        }}
-                                    >
-                                        Eliminar
-                                    </button>
-                                </div>
+                            <div className="flex justify-end mt-4">
+                                <button
+                                    className="px-4 py-2 rounded-xl btn-cmv-outline"
+                                    onClick={() => setShowSavedLists(false)}
+                                >
+                                    Fechar
+                                </button>
                             </div>
-                        ))}
-
-                        <div className="flex justify-end mt-4">
-                            <button
-                                className="px-4 py-2 rounded-xl btn-cmv-outline"
-                                onClick={() => setShowSavedLists(false)}
-                            >
-                                Fechar
-                            </button>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Modals auxiliares finais */}
-            <ModalAddSong visible={showAddModal} onClose={() => setShowAddModal(false)} draft={newSongDraft} setDraft={setNewSongDraft} onSave={saveNewSong} />
-            <ModalSelectSections visible={showSectionModal} pendingSong={pendingSong} sections={sections} pendingSelections={pendingSelections} setPendingSelections={setPendingSelections} onConfirm={confirmSectionSelection} onClose={() => setShowSectionModal(false)} />
-        </>
-    );
+                {/* Modals auxiliares finais */}
+                <ModalAddSong visible={showAddModal} onClose={() => setShowAddModal(false)} draft={newSongDraft} setDraft={setNewSongDraft} onSave={saveNewSong} />
+                <ModalSelectSections visible={showSectionModal} pendingSong={pendingSong} sections={sections} pendingSelections={pendingSelections} setPendingSelections={setPendingSelections} onConfirm={confirmSectionSelection} onClose={() => setShowSectionModal(false)} />
+            </>
+        );
 }

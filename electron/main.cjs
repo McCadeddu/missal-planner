@@ -5,7 +5,7 @@
  *  - Janela normal com borda verdadeira do Windows
  * ============================================================ */
 
-const { app, BrowserWindow, ipcMain, shell, screen } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, screen, Menu, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs");
 

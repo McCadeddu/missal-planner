@@ -1,0 +1,16 @@
+# Electron / builds
+release/
+build/
+electron/
+win-unpacked/
+linux-unpacked/
+mac/
+*.exe
+*.blockmap
+*.AppImage
+*.deb
+*.dmg
+
+# Dev / cache
+.vs/
+node_modules/

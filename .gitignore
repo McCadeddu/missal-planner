@@ -111,3 +111,5 @@ yarn-*.log
 cache/
 tmp/
 temp/
+
+.vercel

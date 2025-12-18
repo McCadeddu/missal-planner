@@ -1,0 +1,238 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/SongList.jsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=af8bac28"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import __vite__cjsImport1_react from "/node_modules/.vite/deps/react.js?v=af8bac28"; const React = __vite__cjsImport1_react.__esModule ? __vite__cjsImport1_react.default : __vite__cjsImport1_react;
+export default function SongList({ title, list = [], onRemove, onEdit }) {
+  return /* @__PURE__ */ jsxDEV(
+    "div",
+    {
+      className: "cmv-window cmv-border",
+      style: { marginBottom: "1.6rem" },
+      children: [
+        title && /* @__PURE__ */ jsxDEV(
+          "h3",
+          {
+            className: "h-liturgico",
+            style: {
+              marginBottom: "1rem",
+              fontSize: "1.35rem",
+              textTransform: "uppercase",
+              letterSpacing: "1px"
+            },
+            children: title
+          },
+          void 0,
+          false,
+          {
+            fileName: "C:/projetos/missal-planner/src/components/SongList.jsx",
+            lineNumber: 14,
+            columnNumber: 7
+          },
+          this
+        ),
+        list.length === 0 ? /* @__PURE__ */ jsxDEV(
+          "p",
+          {
+            className: "p-muted",
+            style: {
+              fontSize: "1rem",
+              padding: "0.5rem 0",
+              textAlign: "center"
+            },
+            children: "Nenhum canto selecionado ainda."
+          },
+          void 0,
+          false,
+          {
+            fileName: "C:/projetos/missal-planner/src/components/SongList.jsx",
+            lineNumber: 28,
+            columnNumber: 7
+          },
+          this
+        ) : /* @__PURE__ */ jsxDEV("div", { className: "space-y-4", children: list.map(
+          (item, idx) => /* @__PURE__ */ jsxDEV(
+            "div",
+            {
+              className: "cmv-border",
+              style: {
+                background: "white",
+                padding: "1.2rem",
+                borderRadius: "16px",
+                boxShadow: "0 10px 22px rgba(92,46,9,0.05)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "1rem"
+              },
+              children: [
+                /* @__PURE__ */ jsxDEV("div", { style: { flexGrow: 1 }, children: [
+                  /* @__PURE__ */ jsxDEV(
+                    "div",
+                    {
+                      style: {
+                        color: "var(--cmv-text)",
+                        fontSize: "1.05rem",
+                        fontWeight: 600,
+                        marginBottom: "0.35rem"
+                      },
+                      children: [
+                        item.numero ? `${item.numero} — ` : "",
+                        item.nome
+                      ]
+                    },
+                    void 0,
+                    true,
+                    {
+                      fileName: "C:/projetos/missal-planner/src/components/SongList.jsx",
+                      lineNumber: 56,
+                      columnNumber: 33
+                    },
+                    this
+                  ),
+                  /* @__PURE__ */ jsxDEV(
+                    "div",
+                    {
+                      className: "p-muted",
+                      style: {
+                        fontSize: "0.82rem",
+                        marginBottom: "0.35rem"
+                      },
+                      children: [
+                        item.composer ? `${item.composer} • ` : "",
+                        item.category || ""
+                      ]
+                    },
+                    void 0,
+                    true,
+                    {
+                      fileName: "C:/projetos/missal-planner/src/components/SongList.jsx",
+                      lineNumber: 68,
+                      columnNumber: 33
+                    },
+                    this
+                  ),
+                  /* @__PURE__ */ jsxDEV(
+                    "div",
+                    {
+                      className: "p-muted",
+                      style: {
+                        fontSize: "0.78rem",
+                        fontStyle: "italic"
+                      },
+                      children: item.section
+                    },
+                    void 0,
+                    false,
+                    {
+                      fileName: "C:/projetos/missal-planner/src/components/SongList.jsx",
+                      lineNumber: 79,
+                      columnNumber: 33
+                    },
+                    this
+                  )
+                ] }, void 0, true, {
+                  fileName: "C:/projetos/missal-planner/src/components/SongList.jsx",
+                  lineNumber: 55,
+                  columnNumber: 29
+                }, this),
+                /* @__PURE__ */ jsxDEV("div", { className: "flex", style: { gap: "0.6rem" }, children: [
+                  onEdit && /* @__PURE__ */ jsxDEV(
+                    "button",
+                    {
+                      onClick: () => onEdit({ section: item.section, indexInSection: item.indexInSection }),
+                      className: "btn-cmv",
+                      style: { padding: "0.5rem 0.65rem" },
+                      title: "Editar",
+                      children: "✏️"
+                    },
+                    void 0,
+                    false,
+                    {
+                      fileName: "C:/projetos/missal-planner/src/components/SongList.jsx",
+                      lineNumber: 92,
+                      columnNumber: 13
+                    },
+                    this
+                  ),
+                  onRemove && /* @__PURE__ */ jsxDEV(
+                    "button",
+                    {
+                      onClick: () => onRemove({ section: item.section, indexInSection: item.indexInSection }),
+                      className: "btn-cmv",
+                      style: {
+                        padding: "0.5rem 0.65rem",
+                        background: "var(--cmv-accent)",
+                        borderColor: "var(--cmv-accent)",
+                        color: "white"
+                      },
+                      title: "Remover",
+                      children: "🗑️"
+                    },
+                    void 0,
+                    false,
+                    {
+                      fileName: "C:/projetos/missal-planner/src/components/SongList.jsx",
+                      lineNumber: 103,
+                      columnNumber: 13
+                    },
+                    this
+                  )
+                ] }, void 0, true, {
+                  fileName: "C:/projetos/missal-planner/src/components/SongList.jsx",
+                  lineNumber: 90,
+                  columnNumber: 29
+                }, this)
+              ]
+            },
+            `${item.section}-${idx}`,
+            true,
+            {
+              fileName: "C:/projetos/missal-planner/src/components/SongList.jsx",
+              lineNumber: 41,
+              columnNumber: 9
+            },
+            this
+          )
+        ) }, void 0, false, {
+          fileName: "C:/projetos/missal-planner/src/components/SongList.jsx",
+          lineNumber: 39,
+          columnNumber: 7
+        }, this)
+      ]
+    },
+    void 0,
+    true,
+    {
+      fileName: "C:/projetos/missal-planner/src/components/SongList.jsx",
+      lineNumber: 9,
+      columnNumber: 5
+    },
+    this
+  );
+}
+_c = SongList;
+var _c;
+$RefreshReg$(_c, "SongList");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/projetos/missal-planner/src/components/SongList.jsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/projetos/missal-planner/src/components/SongList.jsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) {
+  return RefreshRuntime.register(type, "C:/projetos/missal-planner/src/components/SongList.jsx " + id);
+}
+function $RefreshSig$() {
+  return RefreshRuntime.createSignatureFunctionForTransform();
+}
+
+//# sourceMappingURL=data:application/json;base64,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LGVBQWUsQ0FBQztBQUFBLHNCQUNwRixXQUFVO0FBQUEsc0JBQ1YsT0FBTyxFQUFFckIsU0FBUyxpQkFBaUI7QUFBQSxzQkFDbkMsT0FBTTtBQUFBLHNCQUFRO0FBQUE7QUFBQSxvQkFKbEI7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBLGtCQU9BO0FBQUEsa0JBR0hQLFlBQ0c7QUFBQSxvQkFBQztBQUFBO0FBQUEsc0JBQ0csU0FBUyxNQUFNQSxTQUFTLEVBQUUyQixTQUFTakIsS0FBS2lCLFNBQVNDLGdCQUFnQmxCLEtBQUtrQixlQUFlLENBQUM7QUFBQSxzQkFDdEYsV0FBVTtBQUFBLHNCQUNWLE9BQU87QUFBQSx3QkFDSHJCLFNBQVM7QUFBQSx3QkFDVEssWUFBWTtBQUFBLHdCQUNaaUIsYUFBYTtBQUFBLHdCQUNiVCxPQUFPO0FBQUEsc0JBQ1g7QUFBQSxzQkFDQSxPQUFNO0FBQUEsc0JBQVM7QUFBQTtBQUFBLG9CQVRuQjtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsa0JBWUE7QUFBQSxxQkF6QlI7QUFBQTtBQUFBO0FBQUE7QUFBQSx1QkEyQkE7QUFBQTtBQUFBO0FBQUEsWUEzRUssR0FBR1YsS0FBS2lCLE9BQU8sSUFBSWhCLEdBQUc7QUFBQSxZQUQvQjtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBLFVBNkVBO0FBQUEsUUFDSCxLQWhGTDtBQUFBO0FBQUE7QUFBQTtBQUFBLGVBaUZBO0FBQUE7QUFBQTtBQUFBLElBL0dSO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQSxFQWlIQTtBQUVSO0FBQUNtQixLQXJIdUJqQztBQUFRLElBQUFpQztBQUFBQyxhQUFBRCxJQUFBIiwibmFtZXMiOlsiUmVhY3QiLCJTb25nTGlzdCIsInRpdGxlIiwibGlzdCIsIm9uUmVtb3ZlIiwib25FZGl0IiwibWFyZ2luQm90dG9tIiwiZm9udFNpemUiLCJ0ZXh0VHJhbnNmb3JtIiwibGV0dGVyU3BhY2luZyIsImxlbmd0aCIsInBhZGRpbmciLCJ0ZXh0QWxpZ24iLCJtYXAiLCJpdGVtIiwiaWR4IiwiYmFja2dyb3VuZCIsImJvcmRlclJhZGl1cyIsImJveFNoYWRvdyIsImRpc3BsYXkiLCJqdXN0aWZ5Q29udGVudCIsImFsaWduSXRlbXMiLCJnYXAiLCJmbGV4R3JvdyIsImNvbG9yIiwiZm9udFdlaWdodCIsIm51bWVybyIsIm5vbWUiLCJjb21wb3NlciIsImNhdGVnb3J5IiwiZm9udFN0eWxlIiwic2VjdGlvbiIsImluZGV4SW5TZWN0aW9uIiwiYm9yZGVyQ29sb3IiLCJfYyIsIiRSZWZyZXNoUmVnJCJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJTb25nTGlzdC5qc3giXSwic291cmNlc0NvbnRlbnQiOlsi77u/aW1wb3J0IFJlYWN0IGZyb20gXCJyZWFjdFwiO1xuXG4vKipcbiAqIFNvbmdMaXN0IOKAkyBMaXN0YSBsaXTDunJnaWNhIGRlIGNhbnRvcyBzZWxlY2lvbmFkb3NcbiAqIFVzYWRhIHBlbG8gcGFpbmVsIFNlbGVjdGVkU29uZ3NQYW5lbC5qc3hcbiAqL1xuZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24gU29uZ0xpc3QoeyB0aXRsZSwgbGlzdCA9IFtdLCBvblJlbW92ZSwgb25FZGl0IH0pIHtcbiAgICByZXR1cm4gKFxuICAgICAgICA8ZGl2XG4gICAgICAgICAgICBjbGFzc05hbWU9XCJjbXYtd2luZG93IGNtdi1ib3JkZXJcIlxuICAgICAgICAgICAgc3R5bGU9e3sgbWFyZ2luQm90dG9tOiBcIjEuNnJlbVwiIH19XG4gICAgICAgID5cbiAgICAgICAgICAgIHt0aXRsZSAmJiAoXG4gICAgICAgICAgICAgICAgPGgzXG4gICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImgtbGl0dXJnaWNvXCJcbiAgICAgICAgICAgICAgICAgICAgc3R5bGU9e3tcbiAgICAgICAgICAgICAgICAgICAgICAgIG1hcmdpbkJvdHRvbTogXCIxcmVtXCIsXG4gICAgICAgICAgICAgICAgICAgICAgICBmb250U2l6ZTogXCIxLjM1cmVtXCIsXG4gICAgICAgICAgICAgICAgICAgICAgICB0ZXh0VHJhbnNmb3JtOiBcInVwcGVyY2FzZVwiLFxuICAgICAgICAgICAgICAgICAgICAgICAgbGV0dGVyU3BhY2luZzogXCIxcHhcIixcbiAgICAgICAgICAgICAgICAgICAgfX1cbiAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgIHt0aXRsZX1cbiAgICAgICAgICAgICAgICA8L2gzPlxuICAgICAgICAgICAgKX1cblxuICAgICAgICAgICAge2xpc3QubGVuZ3RoID09PSAwID8gKFxuICAgICAgICAgICAgICAgIDxwXG4gICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInAtbXV0ZWRcIlxuICAgICAgICAgICAgICAgICAgICBzdHlsZT17e1xuICAgICAgICAgICAgICAgICAgICAgICAgZm9udFNpemU6IFwiMXJlbVwiLFxuICAgICAgICAgICAgICAgICAgICAgICAgcGFkZGluZzogXCIwLjVyZW0gMFwiLFxuICAgICAgICAgICAgICAgICAgICAgICAgdGV4dEFsaWduOiBcImNlbnRlclwiLFxuICAgICAgICAgICAgICAgICAgICB9fVxuICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAgTmVuaHVtIGNhbnRvIHNlbGVjaW9uYWRvIGFpbmRhLlxuICAgICAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICAgICkgOiAoXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTRcIj5cbiAgICAgICAgICAgICAgICAgICAge2xpc3QubWFwKChpdGVtLCBpZHgpID0+IChcbiAgICAgICAgICAgICAgICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICBrZXk9e2Ake2l0ZW0uc2VjdGlvbn0tJHtpZHh9YH1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJjbXYtYm9yZGVyXCJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICBzdHlsZT17e1xuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBiYWNrZ3JvdW5kOiBcIndoaXRlXCIsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHBhZGRpbmc6IFwiMS4ycmVtXCIsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGJvcmRlclJhZGl1czogXCIxNnB4XCIsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGJveFNoYWRvdzogXCIwIDEwcHggMjJweCByZ2JhKDkyLDQ2LDksMC4wNSlcIixcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgZGlzcGxheTogXCJmbGV4XCIsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGp1c3RpZnlDb250ZW50OiBcInNwYWNlLWJldHdlZW5cIixcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgYWxpZ25JdGVtczogXCJjZW50ZXJcIixcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgZ2FwOiBcIjFyZW1cIixcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICB9fVxuICAgICAgICAgICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxkaXYgc3R5bGU9e3sgZmxleEdyb3c6IDEgfX0+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHN0eWxlPXt7XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgY29sb3I6IFwidmFyKC0tY212LXRleHQpXCIsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgZm9udFNpemU6IFwiMS4wNXJlbVwiLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGZvbnRXZWlnaHQ6IDYwMCxcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBtYXJnaW5Cb3R0b206IFwiMC4zNXJlbVwiLFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgfX1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAge2l0ZW0ubnVtZXJvID8gYCR7aXRlbS5udW1lcm99IOKAlCBgIDogXCJcIn1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHtpdGVtLm5vbWV9XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInAtbXV0ZWRcIlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgc3R5bGU9e3tcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBmb250U2l6ZTogXCIwLjgycmVtXCIsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbWFyZ2luQm90dG9tOiBcIjAuMzVyZW1cIixcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIH19XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHtpdGVtLmNvbXBvc2VyID8gYCR7aXRlbS5jb21wb3Nlcn0g4oCiIGAgOiBcIlwifVxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAge2l0ZW0uY2F0ZWdvcnkgfHwgXCJcIn1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPGRpdlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwicC1tdXRlZFwiXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBzdHlsZT17e1xuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGZvbnRTaXplOiBcIjAuNzhyZW1cIixcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBmb250U3R5bGU6IFwiaXRhbGljXCIsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB9fVxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB7aXRlbS5zZWN0aW9ufVxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleFwiIHN0eWxlPXt7IGdhcDogXCIwLjZyZW1cIiB9fT5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAge29uRWRpdCAmJiAoXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gb25FZGl0KHsgc2VjdGlvbjogaXRlbS5zZWN0aW9uLCBpbmRleEluU2VjdGlvbjogaXRlbS5pbmRleEluU2VjdGlvbiB9KX1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJidG4tY212XCJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBzdHlsZT17eyBwYWRkaW5nOiBcIjAuNXJlbSAwLjY1cmVtXCIgfX1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB0aXRsZT1cIkVkaXRhclwiXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg4pyP77iPXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgKX1cblxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB7b25SZW1vdmUgJiYgKFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPGJ1dHRvblxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IG9uUmVtb3ZlKHsgc2VjdGlvbjogaXRlbS5zZWN0aW9uLCBpbmRleEluU2VjdGlvbjogaXRlbS5pbmRleEluU2VjdGlvbiB9KX1cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJidG4tY212XCJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBzdHlsZT17e1xuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBwYWRkaW5nOiBcIjAuNXJlbSAwLjY1cmVtXCIsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGJhY2tncm91bmQ6IFwidmFyKC0tY212LWFjY2VudClcIixcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgYm9yZGVyQ29sb3I6IFwidmFyKC0tY212LWFjY2VudClcIixcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgY29sb3I6IFwid2hpdGVcIixcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB9fVxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHRpdGxlPVwiUmVtb3ZlclwiXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg8J+Xke+4j1xuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPC9idXR0b24+XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICl9XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICAgKSl9XG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICApfVxuICAgICAgICA8L2Rpdj5cbiAgICApO1xufVxuIl0sImZpbGUiOiJDOi9wcm9qZXRvcy9taXNzYWwtcGxhbm5lci9zcmMvY29tcG9uZW50cy9Tb25nTGlzdC5qc3gifQ==

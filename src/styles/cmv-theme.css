@@ -1,0 +1,184 @@
+/* ============================================================
+   CMV Theme — Estética litúrgica oficial
+   Sol 🌞 | Céu 🌤️ | Terra 🌍
+   ============================================================ */
+
+/* ===========================
+   Variáveis litúrgicas
+   =========================== */
+:root {
+    /* 🌞 Sol — Luz, Ressurreição, Alegria */
+    --lit-sun: #f6c445;
+    /* 🌤️ Céu — Palavra, Espírito, Contemplação */
+    --lit-sky: #1f6fb2;
+    /* 🌍 Terra — Encarnação, Corpo, Caminho */
+    --lit-earth: #7a4a2e;
+    /* Base CMV */
+    --cmv-bg: #fdf9f1;
+    --cmv-text: #5c2e09;
+    --cmv-muted: #876348;
+    --cmv-border: #c77e4a;
+    /* Fontes */
+    --font-heading: "Villaregia", serif;
+    --font-sans: "VillaregiaSans", system-ui, sans-serif;
+    /* UI */
+    --radius: 14px;
+    --radius-lg: 18px;
+    --shadow-soft: 0 8px 26px rgba(92, 46, 9, 0.08);
+}
+
+/* ===========================
+   Base global
+   =========================== */
+body {
+    background: var(--cmv-bg);
+    color: var(--cmv-text);
+    font-family: var(--font-sans);
+}
+
+h1, h2, h3, h4, h5 {
+    font-family: var(--font-heading);
+    color: var(--cmv-text);
+}
+
+/* ===========================
+   Cards / Janelas
+   =========================== */
+.cmv-card,
+.cmv-window {
+    background: #ffffff;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(92, 46, 9, 0.12);
+    box-shadow: var(--shadow-soft);
+    padding: 1.2rem;
+}
+
+/* ===========================
+   Bordas CMV
+   =========================== */
+.cmv-border {
+    border: 2px solid var(--cmv-border) !important;
+    border-radius: var(--radius-lg) !important;
+}
+
+/* ===========================
+   Botões litúrgicos
+   =========================== */
+.btn-lit {
+    padding: 0.55rem 1.1rem;
+    border-radius: 12px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: transform .12s ease, box-shadow .14s ease, background .15s ease;
+}
+
+    .btn-lit:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    }
+
+/* 🌞 Sol */
+.btn-lit-sun {
+    background: var(--lit-sun);
+    color: #5c2e09;
+}
+
+/* 🌤️ Céu */
+.btn-lit-sky {
+    background: var(--lit-sky);
+    color: white;
+}
+
+/* 🌍 Terra */
+.btn-lit-earth {
+    background: var(--lit-earth);
+    color: #fffaf3;
+}
+
+/* Outline padrão CMV */
+.btn-cmv-outline {
+    background: #ffffff;
+    color: var(--cmv-text);
+    border: 2px solid var(--cmv-border);
+    border-radius: 12px;
+    padding: 0.45rem 1rem;
+    font-weight: 600;
+}
+
+    .btn-cmv-outline:hover {
+        background: rgba(241, 229, 174, 0.25);
+    }
+
+/* ===========================
+   Inputs
+   =========================== */
+.cmv-input,
+input,
+select,
+textarea {
+    border-radius: 10px;
+    border: 1px solid rgba(92,46,9,0.18);
+    padding: 0.55rem 0.7rem;
+    font-family: var(--font-sans);
+}
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+        outline: none;
+        border-color: var(--lit-sky);
+        box-shadow: 0 0 0 2px rgba(31,111,178,0.15);
+    }
+
+/* ===========================
+   TipTap / ProseMirror
+   =========================== */
+.ProseMirror {
+    white-space: pre-wrap;
+    outline: none;
+    min-height: 100%;
+    font-family: var(--font-sans);
+}
+
+    .ProseMirror p {
+        margin: 0.4em 0;
+    }
+
+/* ===========================
+   Texto utilitário
+   =========================== */
+.text-sun {
+    color: var(--lit-sun);
+}
+
+.text-sky {
+    color: var(--lit-sky);
+}
+
+.text-earth {
+    color: var(--lit-earth);
+}
+
+.text-muted {
+    color: var(--cmv-muted);
+}
+
+/* ===========================
+   Animação suave
+   =========================== */
+@keyframes fade {
+    from {
+        opacity: 0;
+        transform: scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-fade {
+    animation: fade 0.25s ease-out;
+}

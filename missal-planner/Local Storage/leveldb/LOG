@@ -1,0 +1,14 @@
+2025/12/13-17:02:25.554 4414 Reusing MANIFEST C:\Users\0381\AppData\Roaming\missal-planner\Local Storage\leveldb/MANIFEST-000001
+2025/12/13-17:02:25.579 4414 Recovering log #128
+2025/12/13-17:02:25.580 4414 Level-0 table #130: started
+2025/12/13-17:02:25.588 4414 Level-0 table #130: 21635 bytes OK
+2025/12/13-17:02:25.594 4414 Delete type=0 #128
+2025/12/13-17:02:25.595 35e4 Compacting 4@0 + 1@1 files
+2025/12/13-17:02:25.614 35e4 Generated table #132@0: 22 keys, 44899 bytes
+2025/12/13-17:02:25.614 35e4 Compacted 4@0 + 1@1 files => 44899 bytes
+2025/12/13-17:02:25.618 35e4 compacted to: files[ 0 1 1 0 0 0 0 ]
+2025/12/13-17:02:25.620 35e4 Delete type=2 #120
+2025/12/13-17:02:25.621 35e4 Delete type=2 #122
+2025/12/13-17:02:25.621 35e4 Delete type=2 #125
+2025/12/13-17:02:25.622 35e4 Delete type=2 #127
+2025/12/13-17:02:25.622 35e4 Delete type=2 #130
