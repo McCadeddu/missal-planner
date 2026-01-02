@@ -1,11 +1,11 @@
 {
   "name": "missal-planner",
-  "version": "0.0.9",
+  "version": "0.1.0",
   "author": {
     "name": "Marco Cadeddu",
-    "email": "marco.cadeddu@villaregia.org",
-    "license": "MIT"
+    "email": "marco.cadeddu@villaregia.org"
   },
+  "license": "MIT",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -15,11 +15,12 @@
     "electron": "electron electron/main.cjs",
     "dev-electron": "concurrently \"npm run dev\" \"npm run electron\"",
     "dist": "npm run build && electron-builder",
-    "dist:win": "npm run build && electron-builder --win",
     "dist:linux": "npm run build && electron-builder --linux",
+    "dist:win": "npm run build && electron-builder --win",
     "dist:mac": "npm run build && electron-builder --mac"
   },
   "dependencies": {
+    "@tiptap/extension-bubble-menu": "npm:empty-npm-package@1.0.0",
     "@tiptap/extension-bullet-list": "^3.13.0",
     "@tiptap/extension-color": "^3.13.0",
     "@tiptap/extension-ordered-list": "^3.13.0",
@@ -28,7 +29,6 @@
     "@tiptap/extension-underline": "^3.13.0",
     "@tiptap/react": "^3.13.0",
     "@tiptap/starter-kit": "^3.13.0",
-    "@tiptap/extension-bubble-menu": "npm:empty-npm-package@1.0.0",
     "cheerio": "^1.1.2",
     "cors": "^2.8.5",
     "electron-log": "^5.4.3",
@@ -58,58 +58,50 @@
   "build": {
     "appId": "com.missalplanner.app",
     "productName": "MissalPlanner",
-
     "directories": {
       "output": "release",
       "buildResources": "build"
     },
-
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Office",
+      "icon": "build/icons/icon.png"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build/icons/icon.png"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "build/icons/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MissalPlanner",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "MissalPlanner-Setup-${version}.${ext}"
+    },
+    "publish": null,
     "npmRebuild": false
-  },
-  "files": [
-    "dist/**/*",
-    "electron/**/*"
-  ],
-  "publish": [
-    {
-      "provider": "github",
-      "owner": "McCadeddu",
-      "repo": "missal-planner"
-    }
-  ],
-  "linux": {
-    "target": [
-      "AppImage",
-      "deb"
-    ],
-    "category": "Office",
-    "icon": "build/icons/icon.png"
-  },
-  "win": {
-    "target": [
-      {
-        "target": "nsis",
-        "arch": [
-          "x64",
-          "arm64"
-        ]
-      }
-    ],
-    "icon": "build/icons/icon.png"
-  },
-  "nsis": {
-    "oneClick": false,
-    "allowToChangeInstallationDirectory": true,
-    "createDesktopShortcut": true,
-    "createStartMenuShortcut": true,
-    "shortcutName": "MissalPlanner",
-    "deleteAppDataOnUninstall": false,
-    "artifactName": "MissalPlanner-Setup-${version}.${ext}"
-  },
-  "mac": {
-    "target": [
-      "dmg"
-    ],
-    "icon": "build/icons/icon.png"
   }
 }
